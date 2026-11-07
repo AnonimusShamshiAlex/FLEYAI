@@ -1,3 +1,16 @@
+FLEY AI-Voce - a voice AI assistant that will not only talk with you but can also control your PC: open links, websites, 
+and programs, create files, presentations, write code, and even shut down and turn on your PC, work with a printer, and do just about anything.
+
+![Image description](src/2.jpg)
+
+![Image description](src/3.jpg)
+
+
+Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?usp=sharing
+
+https://console.groq.com/keys API If you want your own API, they'll bring it to you — and I simply recommend Groq.
+
+Если вы хотите собственный API, вам его предоставят — а я просто рекомендую Groq.
 
 I've prepared a full API for you in env — a voice AI assistant that will not only talk with you but can also control your PC: open links, websites, 
 and programs, create files, presentations, write code, and even shut down and turn on your PC, work with a printer, and do just about anything.
@@ -5,8 +18,6 @@ and programs, create files, presentations, write code, and even shut down and tu
 Я подготовил для вас полный API в env свой API — голосовой AI-ассистент, который не только будет с вами разговаривать, 
 но и сможет управлять вашим ПК: открывать ссылки, сайты и программы, создавать файлы, презентации, писать код и даже выключать и включать ПК, 
 работать с принтером и делать практически что угодно.
-
-Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?usp=sharing
 
 
 # FLEY AI 0.5 — C++ версия (Windows), Groq
