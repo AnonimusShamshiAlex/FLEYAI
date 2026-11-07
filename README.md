@@ -14,7 +14,8 @@ Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?
 и вставить в .env GROQ_API_KEY=<Таое API>
 
 I can't give you mine API because the service will block me for exceeding the limits. But you can get your own free key right now in just 1 minute here: https://console.groq.com/keys
-GROQ_API_KEY=<YOU_API>
+
+in .env GROQ_API_KEY=<YOU_API>
 
 https://console.groq.com/keys API If you want your own API, they'll bring it to you — and I simply recommend Groq.
 
