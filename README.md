@@ -13,8 +13,6 @@ Download https://drive.google.com/file/d/19O_UKn-xjBEumWeXcayYNwwAy2dfpmSh/view?
 
 Download https://drive.google.com/file/d/12uNn00gpSSgWfs_6ZK1oeR9RyAvFX4Nl/view?usp=sharing FleyAI0.6v
 
-Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?usp=sharing 👈
-
 https://www.mediafire.com/file/rmt3d3on7x8a6ez/FLEY_AI_Setup.exe/file
 
 https://gofile.io/d/SIi592M8
