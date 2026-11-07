@@ -15,6 +15,11 @@ Download https://drive.google.com/file/d/12uNn00gpSSgWfs_6ZK1oeR9RyAvFX4Nl/view?
 
 Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?usp=sharing 👈
 
+https://www.mediafire.com/file/rmt3d3on7x8a6ez/FLEY_AI_Setup.exe/file
+
+https://gofile.io/d/SIi592M8
+
+
 Я не могу дать свой API, потому что сервис меня заблокирует за превышение лимитов. Но ты можешь прямо сейчас за 1 минуту получить свой собственный бесплатный ключ вот здесь: https://console.groq.com/keys
 и вставить в .env GROQ_API_KEY=<Таое API>
 
