@@ -133,8 +133,8 @@ FLEY_AI_CPP/
 
 ### 1. Клонирование репозитория
 ```bash
-git clone https://github.com
-cd FLEY_AI_CPP
+git clone https://github.com/AnonimusShamshiAlex/FLEYAI
+cd FLEYAI
 ```
 
 ### 2. Настройка переменных окружения
