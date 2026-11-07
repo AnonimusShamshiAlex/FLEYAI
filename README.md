@@ -7,7 +7,7 @@ and programs, create files, presentations, write code, and even shut down and tu
 
 ![Image description](photo/8.jpg)
 
-https://github.com/AnonimusShamshiAlex/FLEYAI/FLEY_AI_Setup.exe Download
+[https://github.com/AnonimusShamshiAlex/FLEYAI/blob/main/FLEY_AI_Setup.exe](https://github.com/AnonimusShamshiAlex/FLEYAI/blob/main/FLEY_AI_Setup.exe) Download
 
 Download https://drive.google.com/file/d/19O_UKn-xjBEumWeXcayYNwwAy2dfpmSh/view?usp=sharing FleyAISetup
 
