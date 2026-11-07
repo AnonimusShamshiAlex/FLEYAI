@@ -7,6 +7,10 @@ and programs, create files, presentations, write code, and even shut down and tu
 
 ![Image description](photo/8.jpg)
 
+https://github.com/AnonimusShamshiAlex/FLEYAI/FLEY_AI_Setup.exe Download
+
+Download https://drive.google.com/file/d/19O_UKn-xjBEumWeXcayYNwwAy2dfpmSh/view?usp=sharing FleyAISetup
+
 Download https://drive.google.com/file/d/12uNn00gpSSgWfs_6ZK1oeR9RyAvFX4Nl/view?usp=sharing FleyAI0.6v
 
 Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?usp=sharing 👈
