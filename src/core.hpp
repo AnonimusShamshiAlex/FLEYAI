@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstring>
 #include <deque>
+#include <initializer_list>
 #include <map>
 #include <string>
 #include <vector>
@@ -270,6 +271,8 @@ struct Settings {
     bool autostart = false;    // запуск вместе с Windows
     bool confirm = false;      // спрашивать подтверждение для опасных действий (по умолчанию нет)
     bool voice_fx = true;      // эффект «голос ИИ» поверх голоса Windows
+    int fx_mode = 1;           // 0 = без эффектов, 1 = JARVIS (мягкий), 2 = робот (металл)
+    std::string window_mode = "full";  // full = на весь экран, window = окно, mini = маленькое окно поверх всех
     bool openrouter = false;
     bool groq = false;
     bool windows_tts = false;  // озвучка встроенным голосом Windows
@@ -285,13 +288,13 @@ inline void split_url(std::string url, std::string& host, std::string& path) {
     while (!path.empty() && path.back() == '/') path.pop_back();
 }
 
-inline Settings make_settings(const std::map<std::string, std::string>& env) {
+inline Settings make_settings(const std::map<std::string, std::string>& env, const std::string& default_key = "") {
     auto get = [&](const char* k, const std::string& def) {
         auto it = env.find(k);
         return (it != env.end() && !it->second.empty()) ? it->second : def;
     };
     Settings s;
-    s.key = get("OPENAI_API_KEY", get("OPENROUTER_API_KEY", get("GROQ_API_KEY", "")));
+    s.key = get("OPENAI_API_KEY", get("OPENROUTER_API_KEY", get("GROQ_API_KEY", default_key)));
     s.openrouter = s.key.compare(0, 6, "sk-or-") == 0;
     s.groq = s.key.compare(0, 4, "gsk_") == 0;
     std::string base, model, stt, tts;
@@ -330,6 +333,11 @@ inline Settings make_settings(const std::map<std::string, std::string>& env) {
         s.confirm = (c == "1" || c == "true" || c == "yes" || c == "on");
         std::string f = to_lower_ascii(get("FLEY_VOICE_FX", "1"));
         s.voice_fx = !(f == "0" || f == "false" || f == "no" || f == "off");
+        s.fx_mode = !s.voice_fx ? 0 : (f == "2" || f == "robot" || f == "робот") ? 2 : 1;
+    }
+    {
+        std::string wm = to_lower_ascii(get("FLEY_WINDOW_MODE", "full"));
+        s.window_mode = (wm == "window" || wm == "mini") ? wm : "full";
     }
     s.wake = get("FLEY_WAKE", "");
     {
@@ -497,7 +505,7 @@ public:
     static constexpr double kBlock = 0.05;
     static constexpr double kMaxUtt = 60.0;
     static constexpr size_t kPre = 8;
-    static constexpr size_t kMinVoiced = 6;
+    static constexpr size_t kMinVoiced = 8;
 
 private:
     double silence_, fixed_, floor_;
@@ -550,7 +558,8 @@ inline uint32_t rd_le(const std::string& s, size_t o, int bytes) {
     for (int i = 0; i < bytes && o + (size_t)i < s.size(); ++i) v |= (uint32_t)(unsigned char)s[o + (size_t)i] << (8 * i);
     return v;
 }
-inline bool wav_apply_fx(std::string& wav) {
+inline bool wav_apply_fx(std::string& wav, int mode = 1) {
+    if (mode <= 0) return false;
     if (wav.size() < 44 || wav.compare(0, 4, "RIFF") != 0 || wav.compare(8, 4, "WAVE") != 0) return false;
     size_t p = 12, data_off = 0, data_len = 0;
     int fmt = 0, ch = 0, bits = 0, rate = 0;
@@ -572,7 +581,7 @@ inline bool wav_apply_fx(std::string& wav) {
     if (fmt != 1 || bits != 16 || ch < 1 || ch > 2 || rate < 8000 || rate > 96000 || !data_off) return false;
     size_t frames = data_len / (size_t)(2 * ch);
     if (frames < 100) return false;
-    size_t tail = (size_t)(rate * 0.35);
+    size_t tail = (size_t)(rate * (mode == 1 ? 0.5 : 0.35));
     size_t total = frames + tail;
     size_t d1 = (size_t)(rate * 0.0065), d2 = (size_t)(rate * 0.0123), d3 = (size_t)(rate * 0.062);
     const double kPi = 3.14159265358979323846;
@@ -583,17 +592,48 @@ inline bool wav_apply_fx(std::string& wav) {
             short v = (short)rd_le(wav, data_off + (i * (size_t)ch + (size_t)c) * 2, 2);
             x[i] = (float)v / 32768.0f;
         }
-        for (size_t i = 0; i < total; ++i) {
-            float v = x[i];
-            if (i >= d1) v += 0.30f * x[i - d1];
-            if (i >= d2) v += 0.16f * x[i - d2];
-            double ring = std::sin(2.0 * kPi * 85.0 * (double)i / (double)rate);
-            y[i] = (float)(v * (1.0 - 0.14) + v * ring * 0.14);
-        }
-        std::vector<float> e(total, 0.0f);
-        for (size_t i = 0; i < total; ++i) {
-            e[i] = y[i] + (i >= d3 ? 0.32f * e[i - d3] : 0.0f);
-            out[(size_t)c][i] = 0.80f * y[i] + 0.30f * e[i];
+        if (mode == 2) {  // робот: гребенчатый фильтр + кольцевая модуляция + эхо
+            for (size_t i = 0; i < total; ++i) {
+                float v = x[i];
+                if (i >= d1) v += 0.30f * x[i - d1];
+                if (i >= d2) v += 0.16f * x[i - d2];
+                double ring = std::sin(2.0 * kPi * 85.0 * (double)i / (double)rate);
+                y[i] = (float)(v * (1.0 - 0.14) + v * ring * 0.14);
+            }
+            std::vector<float> e(total, 0.0f);
+            for (size_t i = 0; i < total; ++i) {
+                e[i] = y[i] + (i >= d3 ? 0.32f * e[i - d3] : 0.0f);
+                out[(size_t)c][i] = 0.80f * y[i] + 0.30f * e[i];
+            }
+        } else {  // JARVIS: чистый тёплый голос, чёткая «воздушная» верхушка, лёгкое утолщение и компактная комната
+            const float a_hp = (float)std::exp(-2.0 * kPi * 90.0 / (double)rate);
+            const float k200 = (float)(1.0 - std::exp(-2.0 * kPi * 200.0 / (double)rate));
+            const float k3k = (float)(1.0 - std::exp(-2.0 * kPi * 3200.0 / (double)rate));
+            float hp = 0, px = 0, lo = 0, hi = 0;
+            std::vector<float> w(total, 0.0f);
+            for (size_t i = 0; i < total; ++i) {
+                float v = x[i];
+                hp = a_hp * (hp + v - px);
+                px = v;
+                v = hp;
+                lo += k200 * (v - lo);
+                hi += k3k * (v - hi);
+                float t = v + 0.32f * lo + 0.30f * (v - hi);
+                w[i] = std::tanh(t * 1.35f) / 1.35f;
+            }
+            size_t e1 = (size_t)(rate * 0.011), e2 = (size_t)(rate * 0.019), k1 = (size_t)(rate * 0.071), k2 = (size_t)(rate * 0.097);
+            for (size_t i = 0; i < total; ++i) {
+                float v = w[i];
+                if (i >= e1) v += 0.16f * w[i - e1];
+                if (i >= e2) v += 0.10f * w[i - e2];
+                y[i] = v;
+            }
+            std::vector<float> c1(total, 0.0f), c2(total, 0.0f);
+            for (size_t i = 0; i < total; ++i) {
+                c1[i] = y[i] + (i >= k1 ? 0.30f * c1[i - k1] : 0.0f);
+                c2[i] = y[i] + (i >= k2 ? 0.25f * c2[i - k2] : 0.0f);
+                out[(size_t)c][i] = 0.88f * y[i] + 0.14f * c1[i] + 0.12f * c2[i];
+            }
         }
     }
     float peak = 0.0f;
@@ -647,6 +687,8 @@ inline std::string explain_error(int status, const std::string& body) {
     std::string msg = error_message(body);
     bool money = low.find("quota") != std::string::npos || low.find("billing") != std::string::npos ||
                  low.find("insufficient") != std::string::npos || low.find("credits") != std::string::npos;
+    if (status == 429 && low.find("per day") != std::string::npos)
+        return "Дневной лимит Groq исчерпан (обновится в течение суток). Можно сменить ключ в настройках.";
     switch (status) {
         case 401:
             return "Неверный API-ключ. Откройте файл .env (кнопка «Настройки») и вставьте правильный ключ.";
@@ -759,6 +801,266 @@ inline bool is_protected_path(std::string p) {
         if (rs.compare(0, 10, "c:\\program") == 0 && p.compare(0, rs.size() + 1, rs + "\\") == 0) return true;
     }
     return false;
+}
+
+
+// ---------------------------------------------------------------- запись значения в .env (сохраняет остальные строки)
+inline std::string set_env_value(const std::string& text, const std::string& key, const std::string& value, bool create = true) {
+    std::vector<std::string> lines;
+    size_t p = 0;
+    while (p <= text.size()) {
+        size_t e = text.find('\n', p);
+        std::string ln = text.substr(p, e == std::string::npos ? std::string::npos : e - p);
+        if (!ln.empty() && ln.back() == '\r') ln.pop_back();
+        lines.push_back(ln);
+        if (e == std::string::npos) break;
+        p = e + 1;
+    }
+    while (!lines.empty() && lines.back().empty()) lines.pop_back();
+    bool found = false;
+    for (auto& ln : lines) {
+        std::string t = trim(ln);
+        if (t.empty() || t[0] == '#') continue;
+        size_t eq = t.find('=');
+        if (eq == std::string::npos) continue;
+        if (trim(t.substr(0, eq)) == key) { ln = key + "=" + value; found = true; }
+    }
+    if (!found && create) lines.push_back(key + "=" + value);
+    std::string o;
+    for (auto& ln : lines) o += ln + "\r\n";
+    return o;
+}
+
+// ---------------------------------------------------------------- быстрые локальные команды (без обращения к ИИ)
+// Самые частые просьбы выполняются мгновенно и надёжно, а всё остальное уходит модели.
+inline std::string norm_cmd(const std::string& in) {
+    std::string l = lower_utf8(in), o;
+    for (size_t i = 0; i < l.size(); ++i) {
+        unsigned char c = (unsigned char)l[i];
+        if (c == 0xD1 && i + 1 < l.size() && (unsigned char)l[i + 1] == 0x91) { o += (char)0xD0; o += (char)0xB5; ++i; continue; }  // ё -> е
+        if (c == 0xE2 && i + 2 < l.size()) { o += ' '; i += 2; continue; }
+        if (c == 0xC2 && i + 1 < l.size()) { o += ' '; i += 1; continue; }
+        if (c < 0x80) {
+            if (c == '.') {
+                bool inner = i > 0 && i + 1 < l.size() && !std::isspace((unsigned char)l[i - 1]) && !std::isspace((unsigned char)l[i + 1]) && l[i + 1] != '.';
+                o += inner ? '.' : ' ';
+            } else if (std::ispunct(c) && c != '+' && c != '#') o += ' ';
+            else o += (char)c;
+            continue;
+        }
+        o += (char)c;
+    }
+    return o;
+}
+inline std::vector<std::string> split_words(const std::string& s) {
+    std::vector<std::string> w;
+    std::string cur;
+    for (char c : s) {
+        if (std::isspace((unsigned char)c)) { if (!cur.empty()) { w.push_back(cur); cur.clear(); } }
+        else cur += c;
+    }
+    if (!cur.empty()) w.push_back(cur);
+    return w;
+}
+inline bool one_of(const std::string& s, std::initializer_list<const char*> l) {
+    for (const char* x : l) if (s == x) return true;
+    return false;
+}
+inline bool starts_with(const std::string& s, const char* p) { return s.compare(0, std::strlen(p), p) == 0; }
+inline std::string join_words(const std::vector<std::string>& w, size_t from = 0) {
+    std::string o;
+    for (size_t i = from; i < w.size(); ++i) o += (o.empty() ? "" : " ") + w[i];
+    return o;
+}
+inline bool is_yt_word(const std::string& s) {
+    return starts_with(s, "ютуб") || starts_with(s, "ютюб") || starts_with(s, "ютьюб") || starts_with(s, "youtube") || starts_with(s, "юту");
+}
+inline bool is_music_word(const std::string& s) {
+    return one_of(s, {"песню", "песня", "песни", "трек", "треки", "музыку", "музыка", "клип", "клипы", "композицию", "альбом", "плейлист", "саундтрек", "хиты", "хит"});
+}
+inline bool is_known_app_word(const std::string& s) {
+    return one_of(s, {"chrome", "хром", "телеграм", "telegram", "дискорд", "discord", "блокнот", "калькулятор", "ворд", "word", "эксель", "excel",
+                      "спотифай", "spotify", "стим", "steam", "браузер", "проводник", "пейнт", "настройки", "параметры", "диспетчер", "vscode",
+                      "edge", "эдж", "firefox", "опера", "яндекс", "whatsapp", "ватсап", "zoom", "зум", "obs", "обс", "камеру", "камера"});
+}
+inline std::string after_word(const std::string& raw, const std::string& word) {
+    std::string l = lower_utf8(raw);
+    size_t p = l.find(word);
+    if (p == std::string::npos) return "";
+    std::string r = trim(raw.substr(p + word.size()));
+    while (!r.empty() && (r[0] == ':' || r[0] == ',' || r[0] == '-' || r[0] == ' ')) r.erase(0, 1);
+    if (lower_utf8(r).compare(0, 7, "что ") == 0) r = r.substr(7);
+    return trim(r);
+}
+
+inline bool local_intent(const std::string& raw, Action& act) {
+    std::vector<std::string> w = split_words(norm_cmd(raw));
+    size_t b = 0;
+    while (b < w.size() && one_of(w[b], {"флей", "флэй", "фли", "fley", "джарвис", "jarvis", "эй", "слушай", "ну", "давай", "можешь", "можете", "сейчас", "а", "и", "так", "итак", "ладно", "пожалуйста", "мне", "привет"})) ++b;
+    size_t e = w.size();
+    while (e > b && one_of(w[e - 1], {"пожалуйста", "плиз", "ладно", "быстро", "сейчас", "флей"})) --e;
+    w = std::vector<std::string>(w.begin() + (long)b, w.begin() + (long)e);
+    if (w.empty()) return false;
+    std::string n = join_words(w), pad = " " + n + " ";
+    auto has = [&](const char* ph) { return pad.find(std::string(" ") + ph + " ") != std::string::npos; };
+    auto set = [&](const char* type, std::initializer_list<std::string> args = {}) { act = Action(); act.type = type; act.args.assign(args.begin(), args.end()); return true; };
+    const std::string& v = w[0];
+
+    // микрофон / питание
+    if (has("выключи микрофон") || has("отключи микрофон") || has("хватит слушать") || has("перестань слушать") || has("не слушай") || has("засыпай") ||
+        has("отключись") || has("до свидания") || has("спокойной ночи") || (w.size() <= 2 && v == "пока"))
+        return set("mic_off");
+    if (has("отмени выключение") || has("отмени перезагрузку") || has("отмени завершение работы")) return set("power", {"cancel"});
+    if (starts_with(v, "заблокируй") || has("блокировка экрана") || has("заблокировать компьютер")) return set("lock");
+
+    // запомни / забудь
+    if (v == "запомни" && w.size() > 1) { std::string f = after_word(raw, "запомни"); if (!f.empty()) return set("remember", {f}); }
+    if (v == "забудь" && w.size() > 1) { std::string f = after_word(raw, "забудь"); if (!f.empty()) return set("forget", {f}); }
+
+    // громкость
+    {
+        int num = -1;
+        for (auto& t : w) if (!t.empty() && std::isdigit((unsigned char)t[0])) num = std::atoi(t.c_str());
+        bool volWord = false;
+        for (auto& t : w) if (t == "громкость" || t == "звук" || t == "громкости") volWord = true;
+        if (volWord && num >= 0 && num <= 100) return set("volume", {"set", std::to_string(num)});
+        if (has("выключи звук") || has("отключи звук") || has("выруби звук") || has("без звука")) return set("volume", {"mute"});
+        if (one_of(v, {"громче", "погромче"}) || has("сделай громче") || has("сделай погромче") || has("прибавь звук") || has("добавь звук") || has("прибавь громкость") ||
+            has("добавь громкость") || has("увеличь громкость") || has("увеличь звук"))
+            return set("volume", {"up", "8"});
+        if (one_of(v, {"тише", "потише"}) || has("сделай тише") || has("сделай потише") || has("убавь звук") || has("убавь громкость") || has("уменьши громкость") || has("уменьши звук"))
+            return set("volume", {"down", "8"});
+    }
+    // медиа
+    if (one_of(n.c_str(), {"следующий трек", "следующая песня", "следующий", "следующую", "дальше", "переключи трек", "включи следующий", "следующее видео", "следующая"}))
+        return set("media", {"next"});
+    if (one_of(n.c_str(), {"предыдущий трек", "предыдущая песня", "предыдущий", "прошлый трек", "прошлая песня", "предыдущую"})) return set("media", {"prev"});
+    if (one_of(n.c_str(), {"пауза", "на паузу", "поставь на паузу", "продолжи", "продолжай", "возобнови", "останови музыку", "останови видео", "пауза видео", "пауза музыка", "play", "стоп музыка"}))
+        return set("media", {"play_pause"});
+
+    static const std::initializer_list<const char*> kPlayVerbs = {"включи", "поставь", "врубай", "воспроизведи", "сыграй", "включить", "поставить", "запусти", "запустить", "открой", "покажи"};
+    static const std::initializer_list<const char*> kStop = {"на", "в", "во", "и", "мне", "для", "там", "видео", "ролик", "через", "с", "помощью", "по", "пожалуйста", "что-нибудь", "что", "нибудь", "канале", "сайте", "mp3"};
+
+    // YouTube
+    size_t yt = w.size();
+    for (size_t i = 0; i < w.size(); ++i) if (is_yt_word(w[i])) { yt = i; break; }
+    if (yt < w.size()) {
+        bool play = one_of(v, {"включи", "поставь", "запусти", "воспроизведи", "врубай", "включить", "поставить", "запустить", "сыграй", "покажи"});
+        bool search = one_of(v, {"найди", "поищи", "ищи", "найти", "поиск"});
+        bool open = one_of(v, {"открой", "зайди", "открыть", "перейди"});
+        if (play || search || open) {
+            std::vector<std::string> q;
+            for (size_t i = 1; i < w.size(); ++i) {
+                if (i == yt || is_yt_word(w[i])) continue;
+                bool stop = false;
+                for (const char* sw : kStop) if (w[i] == sw) stop = true;
+                if (!stop) q.push_back(w[i]);
+            }
+            if (q.empty()) return set("youtube", {""});
+            bool generic = true;
+            for (auto& t : q) if (!is_music_word(t)) generic = false;
+            std::string query = generic ? "популярная музыка" : join_words(q);
+            return play ? set("youtube_play", {query}) : set("youtube", {query});
+        }
+    }
+    // «включи / поставь <песня>» без слова «ютуб»
+    {
+        bool pv = false;
+        for (const char* x : kPlayVerbs) if (v == x) pv = true;
+        if (pv && w.size() >= 2) {
+            static const char* bad[] = {"будильник", "таймер", "напоминание", "свет", "режим", "обои", "яркость", "громкость", "звук", "паузу", "пауза", "тему", "телевизор", "кондиционер", "чайник", "wifi", "bluetooth", "блютуз", "компьютер", "файл", "папку", "сайт", "окно", "программу", "приложение"};
+            bool excl = false, music = false;
+            for (size_t i = 1; i < w.size(); ++i) {
+                for (const char* x : bad) if (w[i] == x) excl = true;
+                if (is_music_word(w[i])) music = true;
+            }
+            std::vector<std::string> q;
+            for (size_t i = 1; i < w.size(); ++i) {
+                bool stop = false;
+                for (const char* sw : kStop) if (w[i] == sw) stop = true;
+                if (!stop) q.push_back(w[i]);
+            }
+            bool softVerb = one_of(v, {"включи", "поставь", "врубай", "воспроизведи", "сыграй", "включить", "поставить"});
+            if (!excl && !q.empty() && (music || (softVerb && q.size() >= 2 && !is_known_app_word(q[0])))) {
+                bool generic = true;
+                for (auto& t : q) if (!is_music_word(t)) generic = false;
+                return set("youtube_play", {generic ? std::string("популярная музыка") : join_words(q)});
+            }
+        }
+    }
+    // Google
+    if (v == "загугли" && w.size() > 1) return set("search", {join_words(w, 1)});
+    if (one_of(v, {"найди", "поищи", "ищи", "найти"})) {
+        bool g = false;
+        for (auto& t : w) if (starts_with(t, "гугл") || starts_with(t, "google") || starts_with(t, "интернет")) g = true;
+        if (g) {
+            std::vector<std::string> q;
+            for (size_t i = 1; i < w.size(); ++i)
+                if (!one_of(w[i], {"в", "на", "во", "гугле", "гугл", "google", "интернете", "сети", "мне", "информацию", "интернет"})) q.push_back(w[i]);
+            if (!q.empty()) return set("search", {join_words(q)});
+        }
+    }
+    // открыть программу / папку / сайт
+    if (one_of(v, {"открой", "открыть", "запусти", "запустить", "включи", "включить"})) {
+        std::vector<std::string> q;
+        for (size_t i = 1; i < w.size(); ++i)
+            if (!one_of(w[i], {"программу", "приложение", "мне", "на", "компьютере", "окно", "браузере", "пожалуйста"})) q.push_back(w[i]);
+        if (q.empty() || q.size() > 3) return false;
+        bool soft = one_of(v, {"включи", "включить"});
+        if (soft && !is_known_app_word(q[0])) return false;
+        if (one_of(q[0], {"папку", "папка", "каталог", "директорию"})) {
+            if (q.size() < 2) return false;
+            return set("open_path", {join_words(q, 1)});
+        }
+        for (auto& t : q) if (t == "сайт" || t == "файл" || t == "документ") return false;
+        if (q.size() == 1 && q[0].find('.') != std::string::npos && q[0].size() > 3) {
+            std::string u = q[0];
+            if (!starts_with(u, "http")) u = "https://" + u;
+            return set("open_url", {u});
+        }
+        return set("open_app", {join_words(q)});
+    }
+    return false;
+}
+
+// Короткая фраза, которую FLEY произносит после выполнения локальной команды
+inline std::string local_ack(const Action& a) {
+    const std::string a0 = a.args.empty() ? "" : a.args[0];
+    if (a.type == "youtube_play") return "Включаю.";
+    if (a.type == "youtube") return a0.empty() ? "Открываю YouTube." : "Открываю поиск.";
+    if (a.type == "open_app") return "Открываю " + a0 + ".";
+    if (a.type == "open_path") return "Открываю папку.";
+    if (a.type == "open_url") return "Открываю.";
+    if (a.type == "search") return "Ищу.";
+    if (a.type == "volume") return a0 == "up" ? "Громче." : a0 == "down" ? "Тише." : a0 == "mute" ? "Готово." : "Громкость " + (a.args.size() > 1 ? a.args[1] : std::string()) + ".";
+    if (a.type == "media") return "Готово.";
+    if (a.type == "lock") return "Блокирую.";
+    if (a.type == "remember") return "Запомнил.";
+    if (a.type == "forget") return "Забыл.";
+    if (a.type == "power") return "Отменил.";
+    if (a.type == "mic_off") return "Отключаюсь. Позовите, когда понадоблюсь.";
+    return "Готово.";
+}
+
+
+// «Please try again in 7m12.5s» / «850ms» / «1h2m3s» -> секунды (0, если не найдено)
+inline int parse_retry_seconds(const std::string& body) {
+    size_t p = body.find("try again in ");
+    if (p == std::string::npos) return 0;
+    const char* c = body.c_str() + p + 13;
+    double total = 0;
+    for (;;) {
+        char* e = nullptr;
+        double v = std::strtod(c, &e);
+        if (e == c) break;
+        c = e;
+        if (c[0] == 'm' && c[1] == 's') { total += v / 1000.0; c += 2; }
+        else if (c[0] == 'm') { total += v * 60.0; c += 1; }
+        else if (c[0] == 'h') { total += v * 3600.0; c += 1; }
+        else if (c[0] == 's') { total += v; c += 1; }
+        else break;
+    }
+    return (int)std::ceil(total);
 }
 
 }  // namespace fley

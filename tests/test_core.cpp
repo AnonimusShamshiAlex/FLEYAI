@@ -165,6 +165,63 @@ int main() {
         CHECK(make_settings(parse_env("FLEY_SILENCE_SECONDS=0.5")).silence == 0.5 && make_settings(parse_env("FLEY_SILENCE_SECONDS=0.1")).silence == 0.9);
         CHECK(make_settings(parse_env("FLEY_PC_CONTROL=0\n")).pc == false && make_settings(parse_env("")).pc == true);
     }
+    // новые настройки и режимы голоса
+    {
+        CHECK(make_settings(parse_env("")).fx_mode == 1 && make_settings(parse_env("FLEY_VOICE_FX=2")).fx_mode == 2 && make_settings(parse_env("FLEY_VOICE_FX=0")).fx_mode == 0);
+        CHECK(make_settings(parse_env("")).key.empty() && make_settings(parse_env(""), "gsk_def").key == "gsk_def" && make_settings(parse_env("GROQ_API_KEY=gsk_own"), "gsk_def").key == "gsk_own");
+        CHECK(make_settings(parse_env("")).window_mode == "full" && make_settings(parse_env("FLEY_WINDOW_MODE=mini")).window_mode == "mini" && make_settings(parse_env("FLEY_WINDOW_MODE=zzz")).window_mode == "full");
+        std::string pcm;
+        for (int i = 0; i < 12000; ++i) put16(pcm, (uint32_t)(uint16_t)(short)(9000 * std::sin(i * 0.08) + 3000 * std::sin(i * 0.31)));
+        for (int mode = 1; mode <= 2; ++mode) {
+            std::string w = make_wav(pcm, 22050), orig = w;
+            CHECK(wav_apply_fx(w, mode) && w.size() > orig.size() && w != orig);
+            short mx = 0; for (size_t i = 44; i + 1 < w.size(); i += 2) mx = std::max<short>(mx, (short)std::abs((short)rd_le(w, i, 2)));
+            CHECK(mx > 20000 && mx < 32767);
+        }
+        std::string z = make_wav(pcm, 22050); CHECK(!wav_apply_fx(z, 0) && z == make_wav(pcm, 22050));
+    }
+    // запись в .env
+    {
+        std::string e = "# c\r\nGROQ_API_KEY=old\r\nFLEY_CALL_ME=\r\n";
+        std::string r = set_env_value(e, "GROQ_API_KEY", "gsk_new");
+        CHECK(r == "# c\r\nGROQ_API_KEY=gsk_new\r\nFLEY_CALL_ME=\r\n");
+        CHECK(set_env_value(r, "FLEY_WAKE", "флей").find("FLEY_WAKE=флей\r\n") != std::string::npos);
+        CHECK(set_env_value(r, "OPENAI_API_KEY", "", false) == r);
+        CHECK(parse_env(set_env_value("", "A", "1"))["A"] == "1");
+    }
+    // быстрые локальные команды
+    {
+        Action a;
+        CHECK(local_intent("Включи на ютубе Imagine Dragons.", a) && a.type == "youtube_play" && a.args[0] == "imagine dragons");
+        CHECK(local_intent("Поставь музыку через ютуб", a) && a.type == "youtube_play" && a.args[0] == "популярная музыка");
+        CHECK(local_intent("Флей, найди на ютубе обзор GTX 1650", a) && a.type == "youtube" && a.args[0] == "обзор gtx 1650");
+        CHECK(local_intent("Открой ютуб", a) && a.type == "youtube" && a.args[0].empty());
+        CHECK(local_intent("включи песню Believer", a) && a.type == "youtube_play" && a.args[0] == "песню believer");
+        CHECK(local_intent("включи Imagine Dragons", a) && a.type == "youtube_play");
+        CHECK(!local_intent("поставь будильник на семь утра", a));
+        CHECK(local_intent("Открой Telegram.", a) && a.type == "open_app" && a.args[0] == "telegram");
+        CHECK(local_intent("запусти блокнот пожалуйста", a) && a.type == "open_app" && a.args[0] == "блокнот");
+        CHECK(local_intent("включи телеграм", a) && a.type == "open_app");
+        CHECK(local_intent("открой папку загрузки", a) && a.type == "open_path" && a.args[0] == "загрузки");
+        CHECK(local_intent("открой google.com", a) && a.type == "open_url" && a.args[0] == "https://google.com");
+        CHECK(!local_intent("открой сайт гитхаб", a) && !local_intent("открой мне файл договор", a));
+        CHECK(local_intent("сделай громче", a) && a.type == "volume" && a.args[0] == "up");
+        CHECK(local_intent("Потише!", a) && a.type == "volume" && a.args[0] == "down");
+        CHECK(local_intent("поставь громкость на 40", a) && a.type == "volume" && a.args[0] == "set" && a.args[1] == "40");
+        CHECK(local_intent("Следующий трек.", a) && a.type == "media" && a.args[0] == "next");
+        CHECK(local_intent("пауза", a) && a.type == "media" && a.args[0] == "play_pause");
+        CHECK(local_intent("заблокируй компьютер", a) && a.type == "lock");
+        CHECK(local_intent("запомни, что я люблю кофе без сахара", a) && a.type == "remember" && a.args[0] == "я люблю кофе без сахара");
+        CHECK(local_intent("забудь кофе", a) && a.type == "forget" && a.args[0] == "кофе");
+        CHECK(local_intent("загугли погода в москве", a) && a.type == "search" && a.args[0] == "погода в москве");
+        CHECK(local_intent("найди в интернете рецепт борща", a) && a.type == "search" && a.args[0] == "рецепт борща");
+        CHECK(local_intent("выключи микрофон", a) && a.type == "mic_off" && local_intent("пока", a) && a.type == "mic_off");
+        CHECK(local_intent("отмени выключение", a) && a.type == "power" && a.args[0] == "cancel");
+        CHECK(!local_intent("расскажи анекдот", a) && !local_intent("", a) && !local_intent("как дела", a) && !local_intent("пока я работаю включи что-нибудь", a));
+        CHECK(local_ack(a = Action{"youtube_play", {"x"}}) == "Включаю.");
+    }
+    CHECK(parse_retry_seconds("Please try again in 7m12.5s.") == 433 && parse_retry_seconds("try again in 850ms") == 1 && parse_retry_seconds("try again in 1h2m3s") == 3723 && parse_retry_seconds("nope") == 0);
+    CHECK(explain_error(429, "Rate limit ... tokens per day (TPD)").find("Дневной") != std::string::npos);
     std::cout << "ALL TESTS PASSED\n";
     return 0;
 }
