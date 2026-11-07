@@ -10,9 +10,9 @@ and programs, create files, presentations, write code, and even shut down and tu
 
 Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?usp=sharing 👈
 
-Я не могу дать свой, потому что сервис меня заблокирует за превышение лимитов. Но ты можешь прямо сейчас за 1 минуту получить свой собственный бесплатный ключ вот здесь: https://console.groq.com/keys
+Я не могу дать свой API, потому что сервис меня заблокирует за превышение лимитов. Но ты можешь прямо сейчас за 1 минуту получить свой собственный бесплатный ключ вот здесь: https://console.groq.com/keys
 
-I can't give you mine because the service will block me for exceeding the limits. But you can get your own free key right now in just 1 minute here: https://console.groq.com/keys
+I can't give you mine API because the service will block me for exceeding the limits. But you can get your own free key right now in just 1 minute here: https://console.groq.com/keys
 
 https://console.groq.com/keys API If you want your own API, they'll bring it to you — and I simply recommend Groq.
 
