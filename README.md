@@ -1,9 +1,9 @@
 FLEY AI-Voce - a voice AI assistant that will not only talk with you but can also control your PC: open links, websites, 
 and programs, create files, presentations, write code, and even shut down and turn on your PC, work with a printer, and do just about anything.
 
-![Image description](src/2.jpg)
+![Image description](photo/2.jpg)
 
-![Image description](src/3.jpg)
+![Image description](photo/3.jpg)
 
 
 Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?usp=sharing
