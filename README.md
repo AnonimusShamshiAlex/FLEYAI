@@ -20,6 +20,8 @@ https://www.mediafire.com/file/rmt3d3on7x8a6ez/FLEY_AI_Setup.exe/file
 https://gofile.io/d/SIi592M8
 
 
+https://drive.google.com/file/d/1GHgqU9uAYTgml9OQGolxmw_q9jkBPD1h/view?usp=sharing FULLV
+
 Я не могу дать свой API, потому что сервис меня заблокирует за превышение лимитов. Но ты можешь прямо сейчас за 1 минуту получить свой собственный бесплатный ключ вот здесь: https://console.groq.com/keys
 и вставить в .env GROQ_API_KEY=<Таое API>
 
