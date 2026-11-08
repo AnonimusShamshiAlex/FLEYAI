@@ -5,6 +5,8 @@ and programs, create files, presentations, write code, and even shut down and tu
 
 https://drtoolparadox.base44.app/fley-ai
 
+https://www.mediafire.com/file/t5iyktxorbhz0lv/FLEY_AI_Setup.exe/file
+
 ![Image description](photo/7.jpg)
 
 ![Image description](photo/8.jpg)
