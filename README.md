@@ -43,6 +43,8 @@ and programs, create files, presentations, write code, and even shut down and tu
 работать с принтером и делать практически что угодно.
 
 
+TG https://t.me/fleyai
+
 # FLEY AI 0.5 — C++ версия (Windows), Groq
 
 Нативная программа на C++17: Win32 + GDI+ (окно), waveIn (микрофон), WinHTTP (сеть), PlaySound (звук).
