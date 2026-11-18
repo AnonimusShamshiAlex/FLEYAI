@@ -24,6 +24,8 @@ https://gofile.io/d/SIi592M8
 
 https://drive.google.com/file/d/1GHgqU9uAYTgml9OQGolxmw_q9jkBPD1h/view?usp=sharing FULLV
 
+https://drive.google.com/file/d/1T_FHpUp1k1h8NlmZqGL_OB-WtuE45enO/view?usp=sharing FEULLVUPG
+
 Я не могу дать свой API, потому что сервис меня заблокирует за превышение лимитов. Но ты можешь прямо сейчас за 1 минуту получить свой собственный бесплатный ключ вот здесь: https://console.groq.com/keys
 и вставить в .env GROQ_API_KEY=<Таое API>
 
