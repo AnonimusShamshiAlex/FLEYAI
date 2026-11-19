@@ -31,7 +31,7 @@ https://drive.google.com/file/d/1T_FHpUp1k1h8NlmZqGL_OB-WtuE45enO/view?usp=shari
 ![Image description](photo/213.jpg)
 ![Image description](photo/212.jpg)
 # ГЕО ПОИСК 
-![Image description](photo/123.jpg)
+![Image description](photo/122.jpg)
 
 Я не могу дать свой API, потому что сервис меня заблокирует за превышение лимитов. Но ты можешь прямо сейчас за 1 минуту получить свой собственный бесплатный ключ вот здесь: https://console.groq.com/keys
 и вставить в .env GROQ_API_KEY=<Таое API>
