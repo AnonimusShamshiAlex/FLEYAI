@@ -2,6 +2,7 @@
 // Тестируется отдельно: tests/test_core.cpp
 #pragma once
 #include <algorithm>
+#include <complex>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -265,8 +266,8 @@ inline std::map<std::string, std::string> parse_env(const std::string& text) {
 struct Settings {
     std::string key, host, base_path, model, stt, tts, voice;
     std::string win_voice, call_me, effort;  // имя голоса Windows, обращение («сэр»), глубина размышлений
-    double win_rate = 1.05, win_pitch = 0.85;  // скорость и высота голоса Windows (pitch < 1 = ниже, глубже)
-    double silence = 0.9, threshold = 0.0;
+    double win_rate = 1.0, win_pitch = 0.96;  // скорость и высота голоса Windows (pitch < 1 = ниже, глубже)
+    double silence = 1.2, threshold = 0.0;
     std::string wake;          // слово-активатор (например «флей»); пусто = отвечать на всё
     bool autostart = false;    // запуск вместе с Windows
     bool confirm = false;      // спрашивать подтверждение для опасных действий (по умолчанию нет)
@@ -277,6 +278,15 @@ struct Settings {
     bool groq = false;
     bool windows_tts = false;  // озвучка встроенным голосом Windows
     bool pc = true;            // управление компьютером голосом (FLEY_PC_CONTROL=0 отключает)
+    std::string tts_key, tts_host = "api.openai.com", tts_path = "/v1";  // отдельный ключ для нейро-озвучки (FLEY_TTS_API_KEY)
+    bool tts_cloud = false;    // озвучка нейросетью OpenAI (голос как у JARVIS), иначе голос Windows
+    std::string mic_device;    // часть названия микрофона (FLEY_MIC_DEVICE), пусто = микрофон по умолчанию
+    bool greeting = true;      // приветствие JARVIS при запуске (FLEY_GREETING=0 отключает)
+    bool denoise = false;       // шумоподавление записи (FLEY_DENOISE=0 отключает)
+    double mic_gain = 2.0;     // цифровое усиление микрофона (для речи издалека); FLEY_MIC_GAIN
+    std::string vision_model;  // модель, которая понимает картинки (зрение, FLEY_VISION_MODEL)
+    bool screen_aware = false; // автоматически смотреть на экран перед каждым ответом (FLEY_SCREEN_AWARE=1)
+    std::string stt_lang = "ru";  // язык распознавания речи; пусто = определять автоматически (FLEY_STT_LANG=auto)
 };
 
 inline void split_url(std::string url, std::string& host, std::string& path) {
@@ -318,16 +328,33 @@ inline Settings make_settings(const std::map<std::string, std::string>& env, con
     split_url(url, s.host, s.base_path);
     s.openrouter = s.openrouter || s.host.find("openrouter.ai") != std::string::npos;
     s.model = get("FLEY_MODEL", model);
+    s.vision_model = get("FLEY_VISION_MODEL", s.openrouter ? "openai/gpt-4o-mini" : s.groq ? "qwen/qwen3.8-27b" : "gpt-4o-mini");
+    {
+        std::string sa = to_lower_ascii(get("FLEY_SCREEN_AWARE", "0"));
+        s.screen_aware = (sa == "1" || sa == "true" || sa == "yes" || sa == "on");
+    }
     s.stt = get("FLEY_STT_MODEL", stt);
     s.tts = get("FLEY_TTS_MODEL", tts);
     s.windows_tts = to_lower_ascii(s.tts) == "windows";
-    s.voice = get("FLEY_VOICE", "onyx");
+    s.tts_key = get("FLEY_TTS_API_KEY", "");
+    s.tts_cloud = !s.tts_key.empty();
+    if (s.tts_cloud) {
+        split_url(get("FLEY_TTS_BASE_URL", "https://api.openai.com/v1"), s.tts_host, s.tts_path);
+        s.tts = get("FLEY_TTS_MODEL", "gpt-4o-mini-tts");
+        s.windows_tts = to_lower_ascii(s.tts) == "windows";
+        s.tts_cloud = !s.windows_tts;
+    }
+    s.voice = get("FLEY_VOICE", s.tts_cloud ? "ash" : "onyx");
     {
         std::string pc = to_lower_ascii(get("FLEY_PC_CONTROL", "1"));
         s.pc = !(pc == "0" || pc == "false" || pc == "no" || pc == "off");
     }
-    s.silence = std::strtod(get("FLEY_SILENCE_SECONDS", "0.9").c_str(), nullptr);
-    if (s.silence < 0.4 || s.silence > 5.0) s.silence = 0.9;
+    {   // 0.9 с (старое значение) обрывало фразы на паузах между словами - заменяем на 1.2 с
+        std::string sv = get("FLEY_SILENCE_SECONDS", "1.2");
+        if (sv == "0.9") sv = "1.2";
+        s.silence = std::strtod(sv.c_str(), nullptr);
+        if (s.silence < 0.4 || s.silence > 5.0) s.silence = 1.2;
+    }
     {
         std::string c = to_lower_ascii(get("FLEY_CONFIRM", "0"));
         s.confirm = (c == "1" || c == "true" || c == "yes" || c == "on");
@@ -348,10 +375,31 @@ inline Settings make_settings(const std::map<std::string, std::string>& env, con
     s.call_me = get("FLEY_CALL_ME", "");
     s.effort = to_lower_ascii(get("FLEY_REASONING", "low"));
     if (s.effort != "low" && s.effort != "medium" && s.effort != "high") s.effort = "low";
-    s.win_rate = std::strtod(get("FLEY_VOICE_RATE", "1.05").c_str(), nullptr);
-    if (s.win_rate < 0.5 || s.win_rate > 2.5) s.win_rate = 1.0;
-    s.win_pitch = std::strtod(get("FLEY_VOICE_PITCH", "0.85").c_str(), nullptr);
-    if (s.win_pitch < 0.5 || s.win_pitch > 1.5) s.win_pitch = 0.85;
+    {
+        // старые значения по умолчанию (0.85 / 1.05 звучали глухо и «роботно») автоматически заменяем на новые
+        std::string rt = get("FLEY_VOICE_RATE", "1.0"), pt = get("FLEY_VOICE_PITCH", "0.96");
+        if (rt == "1.05") rt = "1.0";
+        if (pt == "0.85") pt = "0.96";
+        s.win_rate = std::strtod(rt.c_str(), nullptr);
+        if (s.win_rate < 0.5 || s.win_rate > 2.5) s.win_rate = 1.0;
+        s.win_pitch = std::strtod(pt.c_str(), nullptr);
+        if (s.win_pitch < 0.5 || s.win_pitch > 1.5) s.win_pitch = 0.96;
+    }
+    {
+        std::string d = to_lower_ascii(get("FLEY_DENOISE", "0"));
+        s.denoise = (d == "1" || d == "true" || d == "yes" || d == "on");
+    }
+    {
+        std::string g = to_lower_ascii(get("FLEY_GREETING", "1"));
+        s.greeting = !(g == "0" || g == "false" || g == "no" || g == "off");
+    }
+    s.mic_device = get("FLEY_MIC_DEVICE", "");
+    s.mic_gain = std::strtod(get("FLEY_MIC_GAIN", "2").c_str(), nullptr);
+    if (s.mic_gain < 1.0 || s.mic_gain > 20.0) s.mic_gain = 2.0;
+    {
+        std::string l = to_lower_ascii(get("FLEY_STT_LANG", "ru"));
+        s.stt_lang = (l == "auto" || l == "none" || l == "0") ? "" : l.substr(0, 5);
+    }
     s.threshold = std::strtod(get("FLEY_VOICE_THRESHOLD", "0").c_str(), nullptr);
     return s;
 }
@@ -462,7 +510,7 @@ public:
         block_ = n;
         double rms = rms16(d, n);
         double thr = threshold();
-        bool voiced = rms > thr;
+        bool voiced = rms > (in_speech_ ? thr * 0.6 : thr);  // гистерезис: тихие слоги и окончания слов не обрывают фразу
         if (!voiced && !in_speech_) floor_ = rms < floor_ ? floor_ * 0.6 + rms * 0.4 : floor_ * 0.98 + rms * 0.02;
 
         if (!in_speech_) {
@@ -488,7 +536,7 @@ public:
         run_ = 0;
         if (voiced_blocks_ < kMinVoiced) { utt_.clear(); return false; }  // щелчок / шум
         // обрезаем лишнюю тишину в конце, оставляя 0.3 с
-        size_t keep_quiet = 6;
+        size_t keep_quiet = 10;
         if (quiet_ > keep_quiet) {
             size_t cut = (quiet_ - keep_quiet) * block_;
             if (cut < utt_.size()) utt_.resize(utt_.size() - cut);
@@ -499,12 +547,12 @@ public:
     bool in_speech() const { return in_speech_; }
     double floor() const { return floor_; }
     double threshold() const {
-        return fixed_ > 0 ? fixed_ : std::min(std::max(280.0, floor_ * 3.5), 2500.0);
+        return fixed_ > 0 ? fixed_ : std::min(std::max(200.0, floor_ * 3.0), 3500.0);
     }
 
     static constexpr double kBlock = 0.05;
     static constexpr double kMaxUtt = 60.0;
-    static constexpr size_t kPre = 8;
+    static constexpr size_t kPre = 12;
     static constexpr size_t kMinVoiced = 8;
 
 private:
@@ -537,12 +585,150 @@ inline bool has_wake_word(const std::string& text, const std::string& wake) {
 }
 
 // Whisper на шуме/тишине любит «галлюцинировать» одни и те же фразы - такие ответы игнорируем
+// Улучшение записи микрофона перед распознаванием: убираем постоянную составляющую и гул,
+// подтягиваем тихую речь до нормального уровня (автоусиление), чтобы Whisper лучше слышал.
+// ---------------------------------------------------------------- шумоподавление (спектральное вычитание)
+// Для речи издалека: профиль шума берётся из самых тихих кадров самой записи и вычитается из спектра.
+inline void fft_inplace(std::vector<std::complex<double>>& a, bool inv) {
+    size_t n = a.size();
+    for (size_t i = 1, j = 0; i < n; ++i) {
+        size_t bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) std::swap(a[i], a[j]);
+    }
+    for (size_t len = 2; len <= n; len <<= 1) {
+        double ang = 2.0 * 3.14159265358979323846 / (double)len * (inv ? 1 : -1);
+        std::complex<double> wl(std::cos(ang), std::sin(ang));
+        for (size_t i = 0; i < n; i += len) {
+            std::complex<double> w(1);
+            for (size_t j = 0; j < len / 2; ++j) {
+                auto u = a[i + j], v = a[i + j + len / 2] * w;
+                a[i + j] = u + v;
+                a[i + j + len / 2] = u - v;
+                w *= wl;
+            }
+        }
+    }
+    if (inv) for (auto& x : a) x /= (double)n;
+}
+
+inline void pcm_denoise(std::vector<short>& pcm, double strength = 1.6) {
+    const size_t N = 512, H = 256;
+    if (pcm.size() < N * 6) return;
+    size_t frames = (pcm.size() - N) / H + 1;
+    std::vector<double> win(N);
+    for (size_t i = 0; i < N; ++i) win[i] = std::sin(3.14159265358979323846 * ((double)i + 0.5) / (double)N);  // sqrt-hann
+    std::vector<std::vector<std::complex<double>>> spec(frames, std::vector<std::complex<double>>(N));
+    std::vector<double> energy(frames);
+    for (size_t f = 0; f < frames; ++f) {
+        double e = 0;
+        for (size_t i = 0; i < N; ++i) {
+            double v = (double)pcm[f * H + i] * win[i];
+            spec[f][i] = v;
+            e += v * v;
+        }
+        energy[f] = e;
+        fft_inplace(spec[f], false);
+    }
+    std::vector<size_t> idx(frames);
+    for (size_t i = 0; i < frames; ++i) idx[i] = i;
+    std::sort(idx.begin(), idx.end(), [&](size_t a, size_t b) { return energy[a] < energy[b]; });
+    size_t nq = std::max<size_t>(3, frames / 6);
+    std::vector<double> noise(N / 2 + 1, 0.0);
+    for (size_t k = 0; k < nq; ++k)
+        for (size_t b = 0; b <= N / 2; ++b) noise[b] += std::abs(spec[idx[k]][b]) / (double)nq;
+    std::vector<double> out(pcm.size() + N, 0.0);
+    for (size_t f = 0; f < frames; ++f) {
+        for (size_t b = 0; b <= N / 2; ++b) {
+            double mag = std::abs(spec[f][b]);
+            double clean = std::max(mag - strength * noise[b], 0.12 * mag);  // пол 12%: без «металлических» артефактов
+            double g = mag > 1e-9 ? clean / mag : 1.0;
+            spec[f][b] *= g;
+            if (b > 0 && b < N / 2) spec[f][N - b] = std::conj(spec[f][b]);
+        }
+        fft_inplace(spec[f], true);
+        for (size_t i = 0; i < N; ++i) out[f * H + i] += spec[f][i].real() * win[i];
+    }
+    for (size_t i = 0; i < pcm.size() && i < frames * H + N - H; ++i)
+        pcm[i] = (short)std::lround(std::max(-32767.0, std::min(32767.0, out[i])));
+}
+
+// Автоподстройка усиления: если речь в записи тихая (говорят издалека), в следующий раз усиливаем сильнее.
+inline double agc_next(double gain, double utt_rms, double base, double max_gain, double target = 2200.0) {
+    if (utt_rms < 50.0) return gain;
+    double want = gain * target / utt_rms;
+    double next = gain * std::pow(want / gain, 0.5);  // плавно, половинным шагом
+    return std::max(base, std::min(max_gain, next));
+}
+
+// Цифровое усиление с мягким ограничением: тихая далёкая речь становится слышной, громкая не хрипит.
+inline void pcm_gain(short* d, size_t n, double gain) {
+    if (gain <= 1.001) return;
+    for (size_t i = 0; i < n; ++i) {
+        double v = (double)d[i] * gain, a = std::fabs(v);
+        if (a > 22000.0) a = 22000.0 + 10700.0 * std::tanh((a - 22000.0) / 10700.0);
+        d[i] = (short)std::lround(v < 0 ? -a : a);
+    }
+}
+
+inline void pcm_enhance(std::vector<short>& pcm, int rate = 16000) {
+    if (pcm.size() < 200) return;
+    const double kPi = 3.14159265358979323846;
+    const float a = (float)std::exp(-2.0 * kPi * 100.0 / (double)rate);
+    std::vector<float> f(pcm.size());
+    float hp = 0, px = 0, peak = 0;
+    for (size_t i = 0; i < pcm.size(); ++i) {
+        float v = (float)pcm[i] / 32768.0f;
+        hp = a * (hp + v - px);
+        px = v;
+        f[i] = hp;
+    }
+    // пик считаем по 99.5-му перцентилю, чтобы одиночный щелчок не «глушил» усиление
+    std::vector<float> m(f.size());
+    for (size_t i = 0; i < f.size(); ++i) m[i] = std::fabs(f[i]);
+    size_t k = (size_t)((double)m.size() * 0.995);
+    std::nth_element(m.begin(), m.begin() + (long)std::min(k, m.size() - 1), m.end());
+    peak = m[std::min(k, m.size() - 1)];
+    float gain = peak > 0.003f ? std::min(30.0f, 0.60f / peak) : 1.0f;
+    if (gain < 1.0f) gain = 1.0f;  // громкую запись не трогаем
+    for (size_t i = 0; i < f.size(); ++i) {
+        float v = std::max(-1.0f, std::min(1.0f, f[i] * gain));
+        pcm[i] = (short)std::lround(v * 32767.0f);
+    }
+}
+
+// Глубина размышлений: короткие команды - быстро, вопросы и сложные просьбы - вдумчивее.
+inline std::string choose_effort(const std::string& text, const std::string& base) {
+    std::string t = lower_utf8(trim(text));
+    if (base == "high") return base;
+    static const char* hard[] = {"почему", "как работает", "объясни", "посчитай", "сколько будет", "реши", "задач", "сравни",
+                                 "расскажи", "что такое", "в чём разница", "напиши код", "программ", "why ", "explain",
+                                 "how does", "calculate", "compare", "что лучше", "посоветуй", "придумай", "переведи"};
+    for (const char* h : hard)
+        if (t.find(h) != std::string::npos) return "medium";
+    if (t.size() > 140) return "medium";
+    return base;
+}
+
+ // Ответ Whisper (verbose_json): тихий шум и невнятная речь дают низкую уверенность. Такие «фразы» отбрасываем.
+inline bool stt_low_confidence(const Json& j) {
+    const Json& seg = j["segments"];
+    if (seg.t != Json::Arr || seg.a.empty()) return false;
+    size_t bad = 0;
+    for (const Json& s : seg.a) {
+        double nsp = s["no_speech_prob"].n, lp = s["avg_logprob"].n, cr = s["compression_ratio"].n;
+        if ((nsp > 0.8 && lp < -1.0) || lp < -2.0 || cr > 3.0) ++bad;  // мягкий порог: отбрасываем только явный шум
+    }
+    return bad == seg.a.size();
+}
+
 inline bool is_noise_transcript(const std::string& text) {
     std::string t = to_lower_ascii(trim(text));
     if (t.size() < 2) return true;
     static const char* junk[] = {"субтитры", "продолжение следует", "спасибо за просмотр", "thanks for watching",
                                  "thank you for watching", "subtitles by", "редактор субтитров", "корректор",
-                                 "подписывайтесь на канал", "dimatorzok"};
+                                 "подписывайтесь на канал", "dimatorzok", "amara.org", "до новых встреч", "всем пока", "переводчик", "озвучивание", "смотрите продолжение"};
     for (const char* j : junk)
         if (t.find(j) != std::string::npos && t.size() < 80) return true;
     bool letters = false;
@@ -605,34 +791,31 @@ inline bool wav_apply_fx(std::string& wav, int mode = 1) {
                 e[i] = y[i] + (i >= d3 ? 0.32f * e[i - d3] : 0.0f);
                 out[(size_t)c][i] = 0.80f * y[i] + 0.30f * e[i];
             }
-        } else {  // JARVIS: чистый тёплый голос, чёткая «воздушная» верхушка, лёгкое утолщение и компактная комната
-            const float a_hp = (float)std::exp(-2.0 * kPi * 90.0 / (double)rate);
-            const float k200 = (float)(1.0 - std::exp(-2.0 * kPi * 200.0 / (double)rate));
-            const float k3k = (float)(1.0 - std::exp(-2.0 * kPi * 3200.0 / (double)rate));
-            float hp = 0, px = 0, lo = 0, hi = 0;
+        } else {  // 1 = «живой JARVIS»: естественный тёплый голос без металла и эха
+            const float a_hp = (float)std::exp(-2.0 * kPi * 75.0 / (double)rate);
+            const float k180 = (float)(1.0 - std::exp(-2.0 * kPi * 180.0 / (double)rate));
+            const float k4k = (float)(1.0 - std::exp(-2.0 * kPi * 4200.0 / (double)rate));
+            float hp = 0, px = 0, lo = 0, hi = 0, env = 0;
             std::vector<float> w(total, 0.0f);
             for (size_t i = 0; i < total; ++i) {
                 float v = x[i];
                 hp = a_hp * (hp + v - px);
                 px = v;
                 v = hp;
-                lo += k200 * (v - lo);
-                hi += k3k * (v - hi);
-                float t = v + 0.32f * lo + 0.30f * (v - hi);
-                w[i] = std::tanh(t * 1.35f) / 1.35f;
+                lo += k180 * (v - lo);
+                hi += k4k * (v - hi);
+                float t = v + 0.20f * lo + 0.12f * (v - hi);  // чуть больше тепла и разборчивости
+                // мягкий компрессор: ровная громкость, как у живого диктора
+                float a = std::fabs(t);
+                env += (a > env ? 0.02f : 0.0004f) * (a - env);
+                float g = env > 0.25f ? 0.25f / env * 0.5f + 0.5f : 1.0f;
+                w[i] = t * g;
             }
-            size_t e1 = (size_t)(rate * 0.011), e2 = (size_t)(rate * 0.019), k1 = (size_t)(rate * 0.071), k2 = (size_t)(rate * 0.097);
-            for (size_t i = 0; i < total; ++i) {
+            size_t k1 = (size_t)(rate * 0.032);
+            for (size_t i = 0; i < total; ++i) {  // едва слышная «комната»
                 float v = w[i];
-                if (i >= e1) v += 0.16f * w[i - e1];
-                if (i >= e2) v += 0.10f * w[i - e2];
-                y[i] = v;
-            }
-            std::vector<float> c1(total, 0.0f), c2(total, 0.0f);
-            for (size_t i = 0; i < total; ++i) {
-                c1[i] = y[i] + (i >= k1 ? 0.30f * c1[i - k1] : 0.0f);
-                c2[i] = y[i] + (i >= k2 ? 0.25f * c2[i - k2] : 0.0f);
-                out[(size_t)c][i] = 0.88f * y[i] + 0.14f * c1[i] + 0.12f * c2[i];
+                if (i >= k1) v += 0.07f * w[i - k1];
+                out[(size_t)c][i] = v;
             }
         }
     }
@@ -691,7 +874,7 @@ inline std::string explain_error(int status, const std::string& body) {
         return "Дневной лимит Groq исчерпан (обновится в течение суток). Можно сменить ключ в настройках.";
     switch (status) {
         case 401:
-            return "Неверный API-ключ. Откройте файл .env (кнопка «Настройки») и вставьте правильный ключ.";
+            return "Ключ не подходит или не задан. Создайте бесплатный ключ на console.groq.com/keys (подойдёт ключ любого провайдера: Groq, OpenAI, OpenRouter), нажмите шестерёнку вверху и вставьте его.";
         case 402:
             return "Недостаточно кредитов. Пополните баланс: openrouter.ai/credits";
         case 403:
@@ -893,6 +1076,339 @@ inline std::string after_word(const std::string& raw, const std::string& word) {
     return trim(r);
 }
 
+// ---------------------------------------------------------------- ГЕО (поиск места, координаты, карта)
+struct GeoHit {
+    bool ok = false, hasBox = false;
+    double lat = 0, lon = 0, south = 0, north = 0, west = 0, east = 0;
+    std::string name, type;
+};
+
+inline bool geo_valid(double lat, double lon) { return std::fabs(lat) <= 90.0 && std::fabs(lon) <= 180.0; }
+
+// градусы[, минуты[, секунды]] -> десятичные градусы (знак берётся у градусов)
+inline double geo_dms(const std::vector<double>& pp) {
+    double v = 0, d = 1;
+    for (double x : pp) { v += std::fabs(x) / d; d *= 60; }
+    return (!pp.empty() && pp[0] < 0) ? -v : v;
+}
+
+// Координаты из текста: «41.31, 69.24», «41.3111 N 69.2797 E», «41°18'40"N 69°16'47"E», «широта 41,31 долгота 69,24»
+inline bool geo_parse_coords(const std::string& in, double& lat, double& lon) {
+    std::string s = lower_utf8(in), t;
+    bool dms = false;
+    for (size_t i = 0; i < s.size(); ++i) {  // знаки градусов/минут/секунд -> пробелы
+        unsigned char c = (unsigned char)s[i];
+        if (c == 0xC2 && i + 1 < s.size() && (unsigned char)s[i + 1] == 0xB0) { dms = true; t += ' '; ++i; }
+        else if (c == 0xE2 && i + 2 < s.size() && (unsigned char)s[i + 1] == 0x80) { dms = true; t += ' '; i += 2; }
+        else if (c == '\'' || c == '"') { dms = true; t += ' '; }
+        else t += (char)c;
+    }
+    // запятая: десятичная («41,31 69,24») или разделитель («41.31, 69.24»)
+    bool hasDot = t.find('.') != std::string::npos, semi = t.find(';') != std::string::npos;
+    int tight = 0;
+    for (size_t i = 1; i + 1 < t.size(); ++i)
+        if (t[i] == ',' && std::isdigit((unsigned char)t[i - 1]) && std::isdigit((unsigned char)t[i + 1])) ++tight;
+    for (size_t i = 0; i < t.size(); ++i) {
+        if (t[i] == ';') t[i] = ' ';
+        else if (t[i] == ',') {
+            bool between = i > 0 && i + 1 < t.size() && std::isdigit((unsigned char)t[i - 1]) && std::isdigit((unsigned char)t[i + 1]);
+            t[i] = (between && !hasDot && (semi || tight >= 2)) ? '.' : ' ';
+        }
+    }
+    struct Tok { bool num; double v; char h; };  // h: 'N','S','E','W' или 0
+    std::vector<Tok> toks;
+    size_t i = 0;
+    while (i < t.size()) {
+        unsigned char c = (unsigned char)t[i];
+        if (std::isspace(c)) { ++i; continue; }
+        if (std::isdigit(c) || ((c == '-' || c == '+' || c == '.') && i + 1 < t.size() && (std::isdigit((unsigned char)t[i + 1]) || t[i + 1] == '.'))) {
+            char* e = nullptr;
+            double v = std::strtod(t.c_str() + i, &e);
+            size_t n = (size_t)(e - (t.c_str() + i));
+            if (n == 0) return false;
+            toks.push_back({true, v, 0});
+            i += n;
+            continue;
+        }
+        size_t j = i;  // слово
+        while (j < t.size() && !std::isspace((unsigned char)t[j]) && !std::isdigit((unsigned char)t[j]) && t[j] != '-' && t[j] != '+') ++j;
+        if (j == i) return false;
+        std::string w = t.substr(i, j - i);
+        i = j;
+        char h = 0;
+        if (w == "n" || w == "\xD1\x81") h = 'N';
+        else if (w == "s" || w == "\xD1\x8E") h = 'S';
+        else if (w == "e" || w == "\xD0\xB2") h = 'E';
+        else if (w == "w" || w == "\xD0\xB7") h = 'W';
+        else if (w == "\xD1\x88\xD0\xB8\xD1\x80\xD0\xBE\xD1\x82\xD0\xB0" || w == "\xD0\xB4\xD0\xBE\xD0\xBB\xD0\xB3\xD0\xBE\xD1\x82\xD0\xB0" || w == "lat" || w == "lon" || w == "lng" ||
+                 w == "latitude" || w == "longitude" || w == "gps" || w == "coords" || w == "\xD0\xBA\xD0\xBE\xD0\xBE\xD1\x80\xD0\xB4\xD0\xB8\xD0\xBD\xD0\xB0\xD1\x82\xD1\x8B" || w == "=" || w == ":")
+            continue;
+        else return false;  // посторонние слова: это не координаты, а название места
+        toks.push_back({false, 0, h});
+    }
+    // собираем значения по координатам
+    std::vector<double> vals;
+    std::vector<char> hem;
+    std::vector<double> parts;
+    size_t nums = 0;
+    for (auto& k : toks) if (k.num) ++nums;
+    if (nums < 2) return false;
+    if (!dms) {
+        if (nums != 2) return false;
+        for (size_t q = 0; q < toks.size(); ++q) {
+            if (toks[q].num) { vals.push_back(toks[q].v); hem.push_back(0); }
+            else if (!hem.empty() && hem.back() == 0) hem.back() = toks[q].h;
+            else return false;
+        }
+    } else {
+        size_t per = 0;  // сколько чисел в одной координате, если нет букв сторон света
+        bool anyH = false;
+        for (auto& k : toks) if (!k.num) anyH = true;
+        if (!anyH) { if (nums == 2) per = 1; else if (nums == 4) per = 2; else if (nums == 6) per = 3; else return false; }
+        for (size_t q = 0; q < toks.size(); ++q) {
+            if (toks[q].num) {
+                parts.push_back(toks[q].v);
+                if (!anyH && parts.size() == per) {
+                    vals.push_back(geo_dms(parts)); hem.push_back(0); parts.clear();
+                }
+            } else {
+                if (parts.empty() || parts.size() > 3) return false;
+                vals.push_back(geo_dms(parts)); hem.push_back(toks[q].h); parts.clear();
+            }
+        }
+        if (!parts.empty()) return false;
+    }
+    if (vals.size() != 2) return false;
+    double a = vals[0], b = vals[1];
+    char ha = hem[0], hb = hem[1];
+    bool swap = (ha == 'E' || ha == 'W') || (hb == 'N' || hb == 'S');
+    if (ha == 'S' || ha == 'W') a = -std::fabs(a);
+    if (hb == 'S' || hb == 'W') b = -std::fabs(b);
+    if (swap) std::swap(a, b);
+    if (!geo_valid(a, b)) return false;
+    lat = a; lon = b;
+    return true;
+}
+
+// Дробные координаты тайла OpenStreetMap (Web Mercator)
+inline void geo_tile(double lat, double lon, int z, double& tx, double& ty) {
+    const double PI = 3.14159265358979323846;
+    lat = std::max(-85.0511, std::min(85.0511, lat));
+    double n = std::ldexp(1.0, z), r = lat * PI / 180.0;
+    tx = (lon + 180.0) / 360.0 * n;
+    ty = (1.0 - std::log(std::tan(r) + 1.0 / std::cos(r)) / PI) / 2.0 * n;
+}
+
+// Масштаб карты по размеру найденного объекта (градусы): город ~ 10-12, улица ~ 16, здание ~ 17
+inline int geo_zoom_for_span(double latSpan, double lonSpan) {
+    double span = std::max(std::fabs(latSpan), std::fabs(lonSpan));
+    if (span <= 0.00001) return 16;
+    int z = (int)std::floor(std::log2(720.0 / span));
+    return std::max(3, std::min(17, z));
+}
+
+inline std::string geo_fmt_coord(double v, bool isLat) {
+    char b[64];
+    std::snprintf(b, sizeof b, "%.5f\xC2\xB0 %c", std::fabs(v), isLat ? (v >= 0 ? 'N' : 'S') : (v >= 0 ? 'E' : 'W'));
+    return b;
+}
+
+// Короткое название для озвучки: первые две части display_name
+inline std::string geo_short_name(const std::string& full) {
+    size_t c1 = full.find(", ");
+    if (c1 == std::string::npos) return full;
+    size_t c2 = full.find(", ", c1 + 2);
+    return c2 == std::string::npos ? full : full.substr(0, c2);
+}
+
+// Ответ Nominatim (search: массив, reverse: объект) -> GeoHit
+inline bool geo_parse_nominatim(const std::string& body, GeoHit& h) {
+    Json j;
+    if (!json_parse(body, j)) return false;
+    const Json* r = &j;
+    if (j.t == Json::Arr) r = &j.at(0);
+    if (r->t != Json::Obj || (*r)["error"].t != Json::Null) return false;
+    std::string la = (*r)["lat"].str(), lo = (*r)["lon"].str();
+    if (la.empty() || lo.empty()) return false;
+    h.lat = std::atof(la.c_str());
+    h.lon = std::atof(lo.c_str());
+    if (!geo_valid(h.lat, h.lon)) return false;
+    h.name = (*r)["display_name"].str();
+    h.type = (*r)["addresstype"].str();
+    if (h.type.empty()) h.type = (*r)["type"].str();
+    const Json& bb = (*r)["boundingbox"];
+    if (bb.t == Json::Arr && bb.a.size() == 4) {
+        h.south = std::atof(bb.at(0).str().c_str()); h.north = std::atof(bb.at(1).str().c_str());
+        h.west = std::atof(bb.at(2).str().c_str());  h.east = std::atof(bb.at(3).str().c_str());
+        h.hasBox = true;
+    }
+    h.ok = true;
+    return true;
+}
+
+// Голосовые фразы про карту: «покажи на карте Ташкент», «где находится Эйфелева башня», «координаты 41.31, 69.24», «закрой карту»
+inline bool geo_intent(const std::string& raw, Action& act) {
+    std::string l = lower_utf8(raw);
+    const std::string& src = (l.size() == raw.size()) ? raw : l;
+    auto has = [&](const char* p) { return l.find(p) != std::string::npos; };
+    if (has("закрой карту") || has("закрой глобус") || has("убери карту") || has("убери глобус") || has("скрой карту") || has("скрой глобус") ||
+        has("закрыть карту") || has("закрой гео") || has("закрой геопоиск")) {
+        act = Action(); act.type = "geo_close";
+        return true;
+    }
+    static const char* kTrig[] = {"на карте", "на глобусе", "на земле", "где находится", "где находятся", "где расположен", "где расположена", "где расположено",
+                                  "найди адрес", "покажи адрес", "геопоиск", "гео поиск", "найди координаты", "координаты", "геолокация", "геолокацию"};
+    size_t pos = std::string::npos, len = 0;
+    int ti = -1;
+    for (int i = 0; i < (int)(sizeof kTrig / sizeof kTrig[0]); ++i) {
+        size_t p = l.find(kTrig[i]);
+        if (p != std::string::npos && (pos == std::string::npos || p < pos)) { pos = p; len = std::strlen(kTrig[i]); ti = i; }
+    }
+    if (pos == std::string::npos) return false;
+    bool verb = has("покаж") || has("найд") || has("отмет") || has("поищ") || has("ищи") || has("открой") || has("где ") || has("покажи");
+    if (ti <= 2 && !verb) return false;
+    static const char* kNotGeo[] = {"файл", "папк", "программ", "приложен", "документ", "кнопк", "настройк", "карте памяти", "видеокарт", "карта памяти", "на карте sd"};
+    for (const char* x : kNotGeo) if (has(x)) return false;
+    auto clean = [](const std::string& s) {
+        std::vector<std::string> w = split_words(s);
+        auto key = [](std::string x) {
+            x = lower_utf8(x);
+            while (!x.empty() && (x.back() == ',' || x.back() == '.' || x.back() == '!' || x.back() == '?' || x.back() == ':' || x.back() == ';')) x.pop_back();
+            return x;
+        };
+        static const std::initializer_list<const char*> kFill = {"покажи", "показать", "найди", "найти", "отметь", "поищи", "ищи", "открой", "мне", "нам", "пожалуйста", "флей", "давай",
+                                                                  "где", "находится", "находятся", "расположен", "расположена", "расположено", "у", "для", "по", "какие", "какой", "что", "это",
+                                                                  "адрес", "координаты", "координатам", "ка", "точку", "точный", "место", "на", "карте", "глобусе", "земле", "геопоиск", "гео", "поиск"};
+        size_t b = 0, e = w.size();
+        while (b < e && one_of(key(w[b]), kFill)) ++b;
+        while (e > b && one_of(key(w[e - 1]), {"пожалуйста", "плиз", "флей", "на", "карте", "глобусе", "земле", "мне", "ка"})) --e;
+        std::string o;
+        for (size_t i = b; i < e; ++i) o += (o.empty() ? "" : " ") + w[i];
+        return trim(o);
+    };
+    std::string before = clean(src.substr(0, pos)), after = clean(src.substr(pos + len));
+    std::string q = !after.empty() ? after : before;
+    if (!after.empty() && !before.empty() && ti <= 2 && after.size() < 3) q = before;
+    while (!q.empty() && (q.back() == '?' || q.back() == '!' || q.back() == '.' || q.back() == ',' || q.back() == ' ')) q.pop_back();
+    if (q.size() < 2) return false;
+    act = Action(); act.type = "geo"; act.args.push_back(q);
+    return true;
+}
+
+// ---------------------------------------------------------------- музыкальный плеер: разбор ответов сервисов и голосовые фразы
+// Источники без ключей: Audius (полные треки) и Deezer (отрывки по 30 секунд).
+struct MusicTrack {
+    std::string id, title, artist, url, source;  // source: audius (полный трек) или deezer (отрывок 30 с)
+    int secs = 0;
+    bool full = false;
+};
+
+inline std::string music_fmt_time(long secs) {
+    if (secs < 0) secs = 0;
+    char b[32];
+    std::snprintf(b, sizeof b, "%ld:%02ld", secs / 60, secs % 60);
+    return b;
+}
+
+inline bool music_safe_id(const std::string& id) {
+    if (id.empty() || id.size() > 40) return false;
+    for (unsigned char c : id) if (!std::isalnum(c) && c != '_' && c != '-') return false;
+    return true;
+}
+
+// Audius: {"data":[{"id":"D7KyD","title":"...","duration":187,"user":{"name":"..."},"is_streamable":true}]}
+inline bool music_parse_audius(const std::string& body, std::vector<MusicTrack>& out, size_t maxN) {
+    Json j;
+    if (!json_parse(body, j)) return false;
+    const Json& d = j["data"];
+    if (d.t != Json::Arr) return false;
+    for (const Json& t : d.a) {
+        if (out.size() >= maxN) break;
+        std::string id = t["id"].str();
+        if (!music_safe_id(id)) continue;
+        if (t["is_streamable"].t == Json::Bool && !t["is_streamable"].b) continue;
+        if (t["access"]["stream"].t == Json::Bool && !t["access"]["stream"].b) continue;  // платные и закрытые треки
+        MusicTrack m;
+        m.title = trim(t["title"].str());
+        if (m.title.empty()) continue;
+        m.id = id;
+        m.artist = trim(t["user"]["name"].str());
+        m.secs = (int)t["duration"].n;
+        m.url = "https://api.audius.co/v1/tracks/" + id + "/stream?app_name=FLEY_AI";
+        m.source = "audius";
+        m.full = true;
+        out.push_back(m);
+    }
+    return true;
+}
+
+// Deezer: {"data":[{"id":3135556,"title":"...","duration":224,"preview":"https://...mp3","artist":{"name":"..."}}]}
+inline bool music_parse_deezer(const std::string& body, std::vector<MusicTrack>& out, size_t maxN) {
+    Json j;
+    if (!json_parse(body, j)) return false;
+    if (j["error"].t != Json::Null) return false;
+    const Json& d = j["data"];
+    if (d.t != Json::Arr) return false;
+    for (const Json& t : d.a) {
+        if (out.size() >= maxN) break;
+        std::string url = t["preview"].str();
+        if (!is_http_url(url)) continue;
+        MusicTrack m;
+        m.title = trim(t["title"].str());
+        if (m.title.empty()) continue;
+        m.id = t["id"].t == Json::Num ? std::to_string((long long)t["id"].n) : t["id"].str();
+        m.artist = trim(t["artist"]["name"].str());
+        m.secs = 30;  // Deezer отдаёт только отрывок
+        m.url = url;
+        m.source = "deezer";
+        m.full = false;
+        out.push_back(m);
+    }
+    return true;
+}
+
+// «включи песню Believer», «найди трек numb», «открой плеер», «закрой плеер», «включи музыку».
+// Фразы про YouTube, клипы, видео и известные программы (Spotify и т.п.) сюда не попадают.
+inline bool music_intent(const std::vector<std::string>& w, Action& act) {
+    if (w.empty()) return false;
+    auto has = [&](const char* x) { for (const std::string& t : w) if (t == x) return true; return false; };
+    auto set = [&](const char* type, std::initializer_list<std::string> args) { act = Action(); act.type = type; act.args.assign(args.begin(), args.end()); return true; };
+    for (const std::string& t : w) if (is_yt_word(t) || is_known_app_word(t)) return false;
+    if (has("клип") || has("клипы") || has("видео") || has("ролик")) return false;
+    bool player = has("плеер") || has("плеере") || has("плеера") || has("проигрыватель") || has("проигрывателе") || has("проигрывателя");
+    bool musicw = false;
+    for (const std::string& t : w) if (is_music_word(t) && !one_of(t, {"клип", "клипы"})) musicw = true;
+    if (!player && !musicw) return false;
+    const std::string& v = w[0];
+    if (player && one_of(v, {"закрой", "закрыть", "выключи", "выключить", "убери", "скрой", "отключи"})) return set("music_close", {});
+    // «включи следующую песню», «поставь музыку на паузу»: это управление, а не поиск
+    if (has("следующую") || has("следующий") || has("следующая") || has("дальше") || has("другую") || has("другой")) return set("media", {"next"});
+    if (has("предыдущую") || has("предыдущий") || has("предыдущая")) return set("media", {"prev"});
+    if (has("паузу") || has("пауза") || has("паузе")) return set("media", {"play_pause"});
+    if (has("громче") || has("тише") || has("погромче") || has("потише") || has("громкость") || has("громкости")) return false;
+
+    bool playV = one_of(v, {"включи", "поставь", "врубай", "воспроизведи", "сыграй", "запусти", "включить", "поставить", "запустить"});
+    bool findV = one_of(v, {"найди", "поищи", "ищи", "найти", "покажи"});
+    bool openV = one_of(v, {"открой", "открыть", "включи", "включить", "запусти", "запустить", "покажи"});
+    if (!playV && !findV && !openV) return false;
+    static const std::initializer_list<const char*> kStop = {
+        "на", "в", "во", "и", "мне", "там", "пожалуйста", "что", "нибудь", "какую", "какой", "любую", "любой", "по", "названию", "название", "под", "с", "из",
+        "плеере", "плеер", "плеера", "проигрывателе", "проигрыватель", "проигрывателя", "музыкальном", "музыкальный", "музыкального",
+        "песню", "песня", "песни", "трек", "треки", "музыку", "музыка", "композицию", "хиты", "хит", "найди", "поищи", "ищи", "включи", "поставь", "сыграй", "ка", "давай"};
+    std::vector<std::string> q;
+    for (size_t i = 1; i < w.size(); ++i) {
+        bool stop = false;
+        for (const char* sw : kStop) if (w[i] == sw) stop = true;
+        if (!stop) q.push_back(w[i]);
+    }
+    if (q.empty() && (openV || findV)) {
+        if (playV && musicw && !player) return set("music", {"", "play"});  // «включи музыку» - популярное
+        return set("music", {"", "idle"});                                   // «открой плеер»
+    }
+    if (q.empty()) return false;
+    return set("music", {join_words(q), playV ? "play" : "list"});
+}
+
 inline bool local_intent(const std::string& raw, Action& act) {
     std::vector<std::string> w = split_words(norm_cmd(raw));
     size_t b = 0;
@@ -917,6 +1433,9 @@ inline bool local_intent(const std::string& raw, Action& act) {
     if (v == "запомни" && w.size() > 1) { std::string f = after_word(raw, "запомни"); if (!f.empty()) return set("remember", {f}); }
     if (v == "забудь" && w.size() > 1) { std::string f = after_word(raw, "забудь"); if (!f.empty()) return set("forget", {f}); }
 
+    // карта / геопоиск
+    { Action ga; if (geo_intent(raw, ga)) { act = ga; return true; } }
+
     // громкость
     {
         int num = -1;
@@ -937,6 +1456,9 @@ inline bool local_intent(const std::string& raw, Action& act) {
     if (one_of(n.c_str(), {"предыдущий трек", "предыдущая песня", "предыдущий", "прошлый трек", "прошлая песня", "предыдущую"})) return set("media", {"prev"});
     if (one_of(n.c_str(), {"пауза", "на паузу", "поставь на паузу", "продолжи", "продолжай", "возобнови", "останови музыку", "останови видео", "пауза видео", "пауза музыка", "play", "стоп музыка"}))
         return set("media", {"play_pause"});
+
+    // музыкальный плеер (встроенный): «включи песню ...», «найди трек ...», «открой плеер»
+    { Action ma; if (music_intent(w, ma)) { act = ma; return true; } }
 
     static const std::initializer_list<const char*> kPlayVerbs = {"включи", "поставь", "врубай", "воспроизведи", "сыграй", "включить", "поставить", "запусти", "запустить", "открой", "покажи"};
     static const std::initializer_list<const char*> kStop = {"на", "в", "во", "и", "мне", "для", "там", "видео", "ролик", "через", "с", "помощью", "по", "пожалуйста", "что-нибудь", "что", "нибудь", "канале", "сайте", "mp3"};
@@ -1027,6 +1549,10 @@ inline bool local_intent(const std::string& raw, Action& act) {
 inline std::string local_ack(const Action& a) {
     const std::string a0 = a.args.empty() ? "" : a.args[0];
     if (a.type == "youtube_play") return "Включаю.";
+    if (a.type == "geo") return "Ищу на карте.";
+    if (a.type == "geo_close") return "Закрываю карту.";
+    if (a.type == "music") return a0.empty() ? "Открываю плеер." : "Ищу музыку.";
+    if (a.type == "music_close") return "Закрываю плеер.";
     if (a.type == "youtube") return a0.empty() ? "Открываю YouTube." : "Открываю поиск.";
     if (a.type == "open_app") return "Открываю " + a0 + ".";
     if (a.type == "open_path") return "Открываю папку.";
@@ -1061,6 +1587,154 @@ inline int parse_retry_seconds(const std::string& body) {
         else break;
     }
     return (int)std::ceil(total);
+}
+
+
+// ---------------------------------------------------------------- зрение: экран -> модель с картинками
+inline std::string base64_encode(const std::string& in) {
+    static const char* t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string o;
+    o.reserve((in.size() + 2) / 3 * 4);
+    size_t i = 0;
+    for (; i + 2 < in.size(); i += 3) {
+        uint32_t v = ((uint8_t)in[i] << 16) | ((uint8_t)in[i + 1] << 8) | (uint8_t)in[i + 2];
+        o += t[v >> 18]; o += t[(v >> 12) & 63]; o += t[(v >> 6) & 63]; o += t[v & 63];
+    }
+    if (i + 1 == in.size()) {
+        uint32_t v = (uint8_t)in[i] << 16;
+        o += t[v >> 18]; o += t[(v >> 12) & 63]; o += "==";
+    } else if (i + 2 == in.size()) {
+        uint32_t v = ((uint8_t)in[i] << 16) | ((uint8_t)in[i + 1] << 8);
+        o += t[v >> 18]; o += t[(v >> 12) & 63]; o += t[(v >> 6) & 63]; o += '=';
+    }
+    return o;
+}
+
+// Размер картинки для отправки: длинная сторона не больше max_side, пропорции сохраняются
+inline void fit_size(int w, int h, int max_side, int& ow, int& oh) {
+    ow = w; oh = h;
+    int m = std::max(w, h);
+    if (m <= max_side || m <= 0) return;
+    double k = (double)max_side / m;
+    ow = std::max(1, (int)std::lround(w * k));
+    oh = std::max(1, (int)std::lround(h * k));
+}
+
+// Тело запроса chat/completions с одной картинкой (data-URI) и вопросом
+inline std::string vision_body(const std::string& model, const std::string& prompt, const std::string& mime, const std::string& b64,
+                               int max_tokens, bool openrouter, const std::string& extra = "") {
+    return "{\"model\":\"" + json_escape(model) + "\",\"" + (openrouter ? "max_tokens" : "max_completion_tokens") + "\":" + std::to_string(max_tokens) + "," + extra +
+           "\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"" + json_escape(prompt) +
+           "\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:" + mime + ";base64," + b64 + "\"}}]}]}";
+}
+
+// Текст ответа модели: content может быть строкой или списком частей; <think>…</think> вырезаем
+inline std::string vision_extract_text(const Json& j) {
+    const Json& c = j["choices"].at(0)["message"]["content"];
+    std::string t;
+    if (c.t == Json::Str) t = c.s;
+    else if (c.t == Json::Arr) for (const Json& p : c.a) t += p["text"].str();
+    for (;;) {
+        size_t a = t.find("<think>");
+        if (a == std::string::npos) break;
+        size_t b = t.find("</think>", a);
+        t.erase(a, b == std::string::npos ? std::string::npos : b + 8 - a);
+    }
+    return trim(t);
+}
+
+// Достаёт числа из текста вида {"x":512,"y":300} / (512, 300) / [512,300] / [x1,y1,x2,y2] (берётся центр рамки).
+inline bool vision_numbers(const std::string& s, std::vector<double>& out) {
+    out.clear();
+    size_t i = 0;
+    while (i < s.size() && out.size() < 8) {
+        if (std::isdigit((unsigned char)s[i]) || ((s[i] == '-' || s[i] == '.') && i + 1 < s.size() && std::isdigit((unsigned char)s[i + 1]))) {
+            char* e = nullptr;
+            double v = std::strtod(s.c_str() + i, &e);
+            if (e == s.c_str() + i) { ++i; continue; }
+            out.push_back(v);
+            i = (size_t)(e - s.c_str());
+        } else ++i;
+    }
+    return !out.empty();
+}
+// Координаты точки как доли экрана 0..1. Модель просят отвечать в сетке 0..1000; если числа больше 1000 - это пиксели отправленной картинки (img_w x img_h).
+inline bool vision_parse_point(const std::string& text, int img_w, int img_h, double& fx, double& fy) {
+    std::string t = to_lower_ascii(text);
+    if (t.find("not found") != std::string::npos || t.find("не найден") != std::string::npos || t.find("null") != std::string::npos || t.find("none") != std::string::npos) return false;
+    std::vector<double> n;
+    size_t kx = t.find("\"x\""), ky = t.find("\"y\"");
+    if (kx != std::string::npos && ky != std::string::npos) {   // JSON с ключами x и y (порядок любой)
+        std::vector<double> a, b;
+        vision_numbers(t.substr(kx + 3, 24), a);
+        vision_numbers(t.substr(ky + 3, 24), b);
+        if (a.empty() || b.empty()) return false;
+        n = {a[0], b[0]};
+    } else if (!vision_numbers(text, n)) return false;
+    double x, y;
+    if (n.size() >= 4) { x = (n[0] + n[2]) / 2; y = (n[1] + n[3]) / 2; }
+    else if (n.size() >= 2) { x = n[0]; y = n[1]; }
+    else return false;
+    if (x < 0 || y < 0) return false;
+    if (x <= 1.0 && y <= 1.0) { fx = x; fy = y; return true; }                 // уже доли
+    if (x <= 1000.0 && y <= 1000.0) { fx = x / 1000.0; fy = y / 1000.0; return true; }   // сетка 0..1000
+    if (img_w <= 0 || img_h <= 0 || x > img_w * 1.05 || y > img_h * 1.05) return false;   // пиксели картинки
+    fx = std::min(1.0, x / img_w); fy = std::min(1.0, y / img_h);
+    return true;
+}
+
+// Насколько модель похожа на модель с картинками (0 - не подходит). Нужна, когда названия моделей у провайдера поменялись.
+inline int vision_model_rank(const std::string& id0) {
+    std::string id = to_lower_ascii(id0);
+    for (const char* bad : {"whisper", "tts", "guard", "embed", "orpheus", "moderation", "transcribe", "audio", "safeguard", "rerank", "image-gen", "dall"})
+        if (id.find(bad) != std::string::npos) return 0;
+    auto has = [&](const char* x) { return id.find(x) != std::string::npos; };
+    if (has("vision") || has("-vl") || has("_vl")) return 90;
+    if (has("llama-4") || has("pixtral") || has("muse-spark")) return 85;
+    if (has("gpt-4o") || has("gpt-4.1") || has("gpt-5") || has("gemini") || has("claude") || has("grok") || has("o4-mini")) return 80;
+    if (has("qwen3.5") || has("qwen3.6") || has("qwen3.7") || has("qwen3.8") || has("qwen3.9") || has("qwen4") || has("qwen2.5-vl")) return 75;
+    if (has("gemma-3") || has("gemma3") || has("llava") || has("minicpm") || has("internvl")) return 60;
+    return 0;
+}
+// Из ответа GET /models выбирает до max_n подходящих моделей (лучшие первыми), кроме уже пробованных
+inline std::vector<std::string> vision_model_candidates(const std::string& models_json, const std::vector<std::string>& skip, size_t max_n = 8) {
+    std::vector<std::pair<int, std::string>> v;
+    Json j;
+    if (!json_parse(models_json, j) || j["data"].t != Json::Arr) return {};
+    for (const Json& m : j["data"].a) {
+        std::string id = m["id"].str();
+        int r = vision_model_rank(id);
+        if (r <= 0 || std::find(skip.begin(), skip.end(), id) != skip.end()) continue;
+        v.push_back({r, id});
+    }
+    std::stable_sort(v.begin(), v.end(), [](const std::pair<int, std::string>& x, const std::pair<int, std::string>& y) { return x.first > y.first; });
+    std::vector<std::string> out;
+    for (auto& p : v) { out.push_back(p.second); if (out.size() >= max_n) break; }
+    return out;
+}
+
+inline bool is_vision_action(const std::string& t) {
+    return t == "see" || t == "screen" || t == "look" || t == "screen_find" || t == "find_on_screen" || t == "click_on" || t == "click" || t == "mouse_click" ||
+           t == "move_mouse" || t == "mouse_move" || t == "drag" || t == "scroll" || t == "ui_list" || t == "ui_click" || t == "screen_watch";
+}
+
+// Строка списка элементов окна: «Тип|Имя|x|y|ширина|высота»
+struct UiElem { std::string type, name; int x = 0, y = 0, w = 0, h = 0; };
+inline bool ui_parse_line(const std::string& line0, UiElem& e) {
+    std::string line = line0;
+    while (!line.empty() && (line.back() == '\r' || line.back() == '\n')) line.pop_back();
+    std::vector<std::string> f;
+    size_t s = 0;
+    for (;;) {
+        size_t t = line.find('|', s);
+        if (t == std::string::npos) { f.push_back(line.substr(s)); break; }
+        f.push_back(line.substr(s, t - s));
+        s = t + 1;
+    }
+    if (f.size() < 6 || f[1].empty()) return false;
+    e.type = f[0]; e.name = f[1];
+    e.x = std::atoi(f[2].c_str()); e.y = std::atoi(f[3].c_str()); e.w = std::atoi(f[4].c_str()); e.h = std::atoi(f[5].c_str());
+    return e.w > 0 && e.h > 0;
 }
 
 }  // namespace fley
