@@ -22,14 +22,26 @@ where g++ >nul 2>nul && goto build_gcc
 goto nocompiler
 
 :build_gcc
+echo Компилирую ресурсы (иконка FAI, версия, манифест) ...
+pushd assets
+windres app.rc -O coff -o ..\build\app_res.o
+set "RESERR=%errorlevel%"
+popd
+if not "%RESERR%"=="0" goto fail
 echo Компилирую через g++ ...
-g++ -std=c++17 -O2 -s -mwindows -static -static-libgcc -static-libstdc++ -o "dist\FLEY AI.exe" src\main.cpp -lwinhttp -lwinmm -lgdiplus -lgdi32 -luser32 -lshell32 -lole32 -ladvapi32
+g++ -std=c++17 -O2 -mwindows -static -static-libgcc -static-libstdc++ -o "dist\FLEY AI.exe" src\main.cpp build\app_res.o -lwinhttp -lwinmm -lgdiplus -lgdi32 -luser32 -lshell32 -lole32 -ladvapi32
 if errorlevel 1 goto fail
 goto finish
 
 :build_msvc
+echo Компилирую ресурсы (иконка FAI, версия, манифест) ...
+pushd assets
+rc /nologo /fo ..\build\app.res app.rc
+set "RESERR=%errorlevel%"
+popd
+if not "%RESERR%"=="0" goto fail
 echo Компилирую через Visual C++ ...
-cl /nologo /EHsc /O2 /std:c++17 /utf-8 /DUNICODE /D_UNICODE /Fobuild\ /Fe"dist\FLEY AI.exe" src\main.cpp /link /SUBSYSTEM:WINDOWS
+cl /nologo /EHsc /O2 /std:c++17 /utf-8 /DUNICODE /D_UNICODE /Fobuild\ /Fe"dist\FLEY AI.exe" src\main.cpp build\app.res /link /SUBSYSTEM:WINDOWS
 if errorlevel 1 goto fail
 goto finish
 
@@ -37,12 +49,14 @@ goto finish
 rem Существующий dist\.env НЕ перезаписываем (там ваш ключ)
 if not exist "dist\.env" if exist ".env" copy /y ".env" "dist\.env" >nul
 if not exist "dist\.env" copy /y ".env.example" "dist\.env" >nul
+if defined FLEY_SIGN_PFX call "%~dp0sign.bat" "dist\FLEY AI.exe"
 echo.
 echo ==========================================
 echo   ГОТОВО!  Программа: dist\FLEY AI.exe
+echo   Установщик с ярлыком:  make_installer.bat  (или INSTALL.bat)
 echo ==========================================
-explorer "dist"
-pause
+if not defined FLEY_NOPAUSE explorer "dist"
+if not defined FLEY_NOPAUSE pause
 exit /b 0
 
 :nocompiler
