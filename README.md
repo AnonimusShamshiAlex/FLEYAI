@@ -5,6 +5,8 @@ and programs, create files, presentations, write code, and even shut down and tu
 
 Нужно разработать функцию, позволяющую ИИ видеть весь экран Windows, распознавать его содержимое и взаимодействовать с ним, аналогично возможности смартфона.
 
+Добавил https://fileknot.io/1f4410ab016d2e4d/FLEY_AI_Setup1.2.exe вот
+
 https://mega.nz/file/GqAxjZCS#71-1xMWCGWR6ZJt4XtwJeU2KENl6kB0x32elmKzWKbc 👈Download
 
 https://drtoolparadox.base44.app/fley-ai
