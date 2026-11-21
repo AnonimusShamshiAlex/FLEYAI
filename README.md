@@ -3,6 +3,8 @@ and programs, create files, presentations, write code, and even shut down and tu
 
 **FLEY AI-Voce** — голосовой AI-ассистент, который не только будет с вами разговаривать, но и сможет управлять вашим ПК: открывать ссылки, сайты и программы, создавать файлы, презентации, писать код и даже выключать и включать ПК, работать с принтером и делать практически что угодно.
 
+Нужно разработать функцию, позволяющую ИИ видеть весь экран Windows, распознавать его содержимое и взаимодействовать с ним, аналогично возможности смартфона.
+
 https://mega.nz/file/GqAxjZCS#71-1xMWCGWR6ZJt4XtwJeU2KENl6kB0x32elmKzWKbc 👈Download
 
 https://drtoolparadox.base44.app/fley-ai
