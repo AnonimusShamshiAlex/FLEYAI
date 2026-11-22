@@ -245,6 +245,6 @@ text
 
 API https://console.groq.com/keys
 
-Download https://drive.google.com/file/d/1CBeSwrD9NzC3PQzgdXqqaZ0bFbTedY8U/view?usp=sharing
+Download https://mega.nz/file/ivBwQI4R#wBgfTlrvm6D0A0UBKG029An29W7NAHFfgw2o9JWayuE
 
 Нужно разработать функцию, позволяющую ИИ видеть весь экран Windows, распознавать его содержимое и взаимодействовать с ним, аналогично возможности смартфона.
