@@ -5,7 +5,7 @@ and programs, create files, presentations, write code, and even shut down and tu
 
 Добавил функцию, позволяющую ИИ видеть весь экран Windows, распознавать его содержимое и взаимодействовать
 
-вот силка для него 
+вот силка для него https://mega.nz/file/ivBwQI4R#wBgfTlrvm6D0A0UBKG029An29W7NAHFfgw2o9JWayuE
 
 Нужно разработать функцию, позволяющую ИИ видеть весь экран Windows, распознавать его содержимое и взаимодействовать с ним, аналогично возможности смартфона.
 
