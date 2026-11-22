@@ -68,6 +68,8 @@ and programs, create files, presentations, write code, and even shut down and tu
 
 TG https://t.me/fleyai
 
+![Image description](photo_2026-11-13_06-06-43.png)
+
 # FLEY AI 0.5 — C++ версия (Windows), Groq
 
 Нативная программа на C++17: Win32 + GDI+ (окно), waveIn (микрофон), WinHTTP (сеть), PlaySound (звук).
