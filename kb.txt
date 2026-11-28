@@ -1,0 +1,1184 @@
+GIT|git init|создать репозиторий
+GIT|git clone <url>|клонировать репозиторий
+GIT|git clone --depth 1 <url>|поверхностный клон, быстрее
+GIT|git status -sb|краткий статус
+GIT|git add -p|добавлять изменения кусками
+GIT|git add -A|добавить всё
+GIT|git commit -m "msg"|коммит
+GIT|git commit --amend --no-edit|дописать в последний коммит
+GIT|git commit --amend|изменить сообщение последнего коммита
+GIT|git log --oneline --graph --all|граф истории
+GIT|git log -p -- <file>|история изменений файла
+GIT|git log -S"text"|найти коммит, добавивший/убравший строку
+GIT|git log --author="name"|коммиты автора
+GIT|git log --since="2 weeks ago"|коммиты за период
+GIT|git blame <file>|кто изменил каждую строку
+GIT|git diff|неиндексированные изменения
+GIT|git diff --staged|изменения в индексе
+GIT|git diff a..b|разница между ветками
+GIT|git diff --stat|сводка изменений
+GIT|git branch -a|все ветки
+GIT|git branch -d <name>|удалить влитую ветку
+GIT|git branch -D <name>|удалить ветку принудительно
+GIT|git branch -m <new>|переименовать ветку
+GIT|git switch -c <name>|создать и перейти в ветку
+GIT|git switch -|вернуться на прошлую ветку
+GIT|git checkout <commit> -- <file>|вернуть файл из коммита
+GIT|git restore <file>|отбросить изменения файла
+GIT|git restore --staged <file>|убрать из индекса
+GIT|git reset --soft HEAD~1|отменить коммит, оставить изменения в индексе
+GIT|git reset --mixed HEAD~1|отменить коммит, оставить в рабочей папке
+GIT|git reset --hard HEAD~1|отменить коммит и изменения (опасно)
+GIT|git revert <commit>|отменить коммит новым коммитом
+GIT|git stash push -m "msg"|спрятать изменения
+GIT|git stash list|список stash
+GIT|git stash pop|вернуть последний stash
+GIT|git stash apply stash@{1}|применить stash без удаления
+GIT|git merge <branch>|слить ветку
+GIT|git merge --abort|отменить слияние
+GIT|git merge --squash <branch>|слить одним коммитом
+GIT|git rebase main|перебазировать на main
+GIT|git rebase -i HEAD~5|интерактивная правка последних 5 коммитов
+GIT|git rebase --abort|отменить rebase
+GIT|git rebase --continue|продолжить rebase после конфликта
+GIT|git cherry-pick <commit>|перенести коммит
+GIT|git reflog|журнал перемещений HEAD, спасение потерянных коммитов
+GIT|git fetch --all --prune|обновить ссылки, удалить мёртвые ветки
+GIT|git pull --rebase|подтянуть с rebase
+GIT|git push -u origin <branch>|отправить и привязать ветку
+GIT|git push --force-with-lease|безопасный force push
+GIT|git push origin --delete <branch>|удалить удалённую ветку
+GIT|git remote -v|список remote
+GIT|git remote add origin <url>|добавить remote
+GIT|git remote set-url origin <url>|сменить URL
+GIT|git tag -a v1.0 -m "msg"|аннотированный тег
+GIT|git push --tags|отправить теги
+GIT|git bisect start|бинарный поиск коммита с багом
+GIT|git bisect good <c>|пометить хороший коммит
+GIT|git bisect bad <c>|пометить плохой коммит
+GIT|git clean -fdn|показать, что удалится из неотслеживаемого
+GIT|git clean -fd|удалить неотслеживаемые файлы
+GIT|git config --global user.name "N"|задать имя
+GIT|git config --global user.email "e"|задать email
+GIT|git config --global alias.co checkout|создать алиас
+GIT|git config --list --show-origin|все настройки и откуда они
+GIT|git submodule update --init --recursive|подтянуть сабмодули
+GIT|git worktree add ../dir <branch>|вторая рабочая папка для ветки
+GIT|git shortlog -sn|топ авторов по коммитам
+GIT|git grep "text"|поиск по отслеживаемым файлам
+GIT|git ls-files|список отслеживаемых файлов
+GIT|git archive -o out.zip HEAD|архив из репозитория
+GIT|git gc --aggressive|сжать репозиторий
+GIT|git fsck|проверить целостность репозитория
+GIT|git update-index --assume-unchanged <f>|игнорировать изменения файла локально
+GIT|git filter-repo --path secret.txt --invert-paths|вычистить файл из истории (после утечки секрета)
+GIT|git commit -S -m "msg"|подписанный GPG коммит
+GIT|git log --show-signature|проверка подписей
+GIT|git rev-parse --short HEAD|короткий хеш HEAD
+GIT|git describe --tags|ближайший тег
+GIT|git diff --name-only HEAD~1|имена изменённых файлов
+GIT|git apply patch.diff|применить патч
+GIT|git format-patch -1 HEAD|патч из коммита
+GIT|.gitignore: *.env|не коммитить секреты и .env
+DOCKER|docker ps -a|все контейнеры
+DOCKER|docker images|образы
+DOCKER|docker run -it --rm <img> sh|одноразовый интерактивный контейнер
+DOCKER|docker run -d -p 8080:80 --name web nginx|запуск в фоне с портом
+DOCKER|docker run -v $(pwd):/app <img>|примонтировать папку
+DOCKER|docker run --read-only --cap-drop ALL <img>|усиленный контейнер (read-only, без capabilities)
+DOCKER|docker run --user 1000:1000 <img>|не от root
+DOCKER|docker run --network none <img>|без сети
+DOCKER|docker run --memory 256m --cpus 0.5 <img>|лимиты ресурсов
+DOCKER|docker exec -it <c> bash|зайти в контейнер
+DOCKER|docker logs -f --tail 100 <c>|логи в реальном времени
+DOCKER|docker stop <c>|остановить
+DOCKER|docker rm -f <c>|удалить принудительно
+DOCKER|docker rmi <img>|удалить образ
+DOCKER|docker build -t name:tag .|собрать образ
+DOCKER|docker build --no-cache -t n .|сборка без кэша
+DOCKER|docker buildx build --platform linux/amd64,linux/arm64 .|мультиплатформенная сборка
+DOCKER|docker pull <img>|скачать образ
+DOCKER|docker push <img>|отправить образ
+DOCKER|docker tag <img> repo/name:tag|тег образа
+DOCKER|docker inspect <c>|подробная информация
+DOCKER|docker stats|нагрузка контейнеров
+DOCKER|docker top <c>|процессы контейнера
+DOCKER|docker cp <c>:/path ./|копировать из контейнера
+DOCKER|docker network ls|сети
+DOCKER|docker network create <n>|создать сеть
+DOCKER|docker volume ls|тома
+DOCKER|docker volume prune|удалить неиспользуемые тома
+DOCKER|docker system prune -a|очистить всё неиспользуемое
+DOCKER|docker system df|сколько места занято
+DOCKER|docker history <img>|слои образа
+DOCKER|docker save -o img.tar <img>|выгрузить образ в файл
+DOCKER|docker load -i img.tar|загрузить образ из файла
+DOCKER|docker compose up -d|поднять стек
+DOCKER|docker compose down -v|остановить и удалить тома
+DOCKER|docker compose logs -f <svc>|логи сервиса
+DOCKER|docker compose ps|состояние сервисов
+DOCKER|docker compose build --pull|пересобрать с обновлением базы
+DOCKER|docker compose exec <svc> sh|shell в сервисе
+DOCKER|docker scout cves <img>|уязвимости образа
+DOCKER|trivy image <img>|сканер уязвимостей образа
+DOCKER|hadolint Dockerfile|линтер Dockerfile
+DOCKER|Dockerfile: USER nonroot|запускать приложение не от root
+DOCKER|Dockerfile: multi-stage build|маленький образ без инструментов сборки
+DOCKER|Dockerfile: HEALTHCHECK CMD curl -f http://localhost/|проверка здоровья
+DOCKER|.dockerignore|исключить .git, .env, node_modules из контекста
+K8S|kubectl get pods -A|все поды
+K8S|kubectl get pods -o wide|поды с узлами и IP
+K8S|kubectl describe pod <p>|детали и события пода
+K8S|kubectl logs -f <p> -c <container>|логи контейнера
+K8S|kubectl logs <p> --previous|логи упавшего контейнера
+K8S|kubectl exec -it <p> -- sh|shell в поде
+K8S|kubectl apply -f file.yaml|применить манифест
+K8S|kubectl delete -f file.yaml|удалить по манифесту
+K8S|kubectl get svc,ing,deploy|сервисы, ingress, деплои
+K8S|kubectl rollout status deploy/<d>|статус раскатки
+K8S|kubectl rollout undo deploy/<d>|откат
+K8S|kubectl rollout restart deploy/<d>|перезапуск деплоя
+K8S|kubectl scale deploy/<d> --replicas=3|масштабирование
+K8S|kubectl port-forward svc/<s> 8080:80|проброс порта
+K8S|kubectl top pods|потребление ресурсов
+K8S|kubectl get events --sort-by=.lastTimestamp|свежие события
+K8S|kubectl config get-contexts|контексты
+K8S|kubectl config use-context <c>|сменить кластер
+K8S|kubectl get secret <s> -o yaml|секрет (base64, не шифрование)
+K8S|kubectl auth can-i --list|мои права в кластере
+K8S|kubectl get networkpolicy -A|сетевые политики
+K8S|kubectl create ns <n>|создать namespace
+K8S|kubectl label pod <p> k=v|поставить метку
+K8S|kubectl taint nodes <n> k=v:NoSchedule|taint узла
+K8S|kubectl drain <n> --ignore-daemonsets|освободить узел
+K8S|kubectl debug <p> -it --image=busybox|отладочный контейнер
+K8S|kube-bench|проверка кластера по CIS Benchmark
+K8S|kubescape scan|проверка манифестов на ошибки безопасности
+K8S|helm install <rel> <chart>|установить chart
+K8S|helm upgrade --install <rel> <chart>|обновить или установить
+K8S|helm rollback <rel> 1|откат релиза
+K8S|helm template .|отрендерить манифесты
+K8S|helm list -A|релизы
+K8S|securityContext: runAsNonRoot: true|под не от root
+K8S|securityContext: readOnlyRootFilesystem: true|только чтение корня
+K8S|resources: limits/requests|лимиты ресурсов пода
+LINUX|ls -lah|список с размерами
+LINUX|ls -lt|сортировка по времени
+LINUX|cd -|в прошлую папку
+LINUX|pwd|текущая папка
+LINUX|tree -L 2|дерево каталогов
+LINUX|cp -a src dst|копировать с атрибутами
+LINUX|mv a b|переместить/переименовать
+LINUX|rm -rf <dir>|удалить рекурсивно (осторожно)
+LINUX|mkdir -p a/b/c|создать вложенные папки
+LINUX|touch file|создать пустой файл
+LINUX|ln -s target link|символическая ссылка
+LINUX|cat file|вывести файл
+LINUX|less +F file|читать с хвостом, как tail -f
+LINUX|head -n 20 file|первые строки
+LINUX|tail -f /var/log/syslog|следить за логом
+LINUX|tail -n 100 file|последние строки
+LINUX|wc -l file|число строк
+LINUX|sort -u file|сортировка без дублей
+LINUX|sort | uniq -c | sort -nr|частота строк
+LINUX|cut -d: -f1 /etc/passwd|вырезать поле
+LINUX|awk '{print $1}' file|первый столбец
+LINUX|awk -F, '{s+=$3} END{print s}' f|сумма столбца
+LINUX|sed 's/old/new/g' file|замена
+LINUX|sed -i.bak 's/a/b/g' file|замена на месте с бэкапом
+LINUX|sed -n '10,20p' file|показать строки 10-20
+LINUX|tr -d '\r' < in > out|убрать CR из файла Windows
+LINUX|xargs -n1 -P4 cmd|параллельный запуск
+LINUX|find / -name "*.log" 2>/dev/null|найти файлы по имени
+LINUX|find . -type f -mtime -1|файлы за сутки
+LINUX|find . -size +100M|большие файлы
+LINUX|find / -perm -4000 -type f 2>/dev/null|файлы с SUID (аудит)
+LINUX|find / -writable -type d 2>/dev/null|записываемые каталоги (аудит)
+LINUX|find . -type f -exec sha256sum {} +|хеши всех файлов
+LINUX|grep -rn "text" .|поиск по файлам
+LINUX|grep -rIl "password" /etc 2>/dev/null|где упоминается password (аудит конфигов)
+LINUX|grep -E "a|b" file|регулярка
+LINUX|grep -v text file|исключить совпадения
+LINUX|grep -C 3 text file|с контекстом
+LINUX|rg "text"|быстрый поиск ripgrep
+LINUX|fd name|быстрый find
+LINUX|locate name|поиск по индексу
+LINUX|which cmd|путь команды
+LINUX|type -a cmd|все варианты команды
+LINUX|file x|тип файла
+LINUX|stat file|метаданные файла
+LINUX|du -sh *|размеры папок
+LINUX|du -ah . | sort -rh | head|самые большие
+LINUX|df -h|свободное место
+LINUX|ncdu /|интерактивный анализ диска
+LINUX|lsblk -f|диски и файловые системы
+LINUX|mount|смонтированные ФС
+LINUX|fdisk -l|разделы
+LINUX|blkid|UUID разделов
+LINUX|free -h|память
+LINUX|top|процессы
+LINUX|htop|удобный монитор процессов
+LINUX|ps aux --sort=-%mem|процессы по памяти
+LINUX|ps -ef --forest|дерево процессов
+LINUX|pgrep -a name|найти процесс
+LINUX|kill -15 <pid>|вежливо завершить
+LINUX|kill -9 <pid>|убить принудительно
+LINUX|pkill name|убить по имени
+LINUX|nice -n 10 cmd|запуск с низким приоритетом
+LINUX|renice 10 -p <pid>|сменить приоритет
+LINUX|uptime|аптайм и нагрузка
+LINUX|vmstat 1|статистика памяти/CPU
+LINUX|iostat -x 1|нагрузка дисков
+LINUX|dstat|общая статистика
+LINUX|lsof -i :80|кто держит порт
+LINUX|lsof -p <pid>|открытые файлы процесса
+LINUX|lsof +L1|удалённые, но открытые файлы
+LINUX|strace -p <pid>|системные вызовы процесса
+LINUX|strace -f -e trace=network cmd|сетевые вызовы
+LINUX|ltrace cmd|вызовы библиотек
+LINUX|dmesg -T|сообщения ядра с временем
+LINUX|journalctl -xe|последние ошибки systemd
+LINUX|journalctl -u <svc> -f|лог сервиса
+LINUX|journalctl --since "1 hour ago"|лог за час
+LINUX|journalctl -p err -b|ошибки с загрузки
+LINUX|systemctl status <svc>|статус сервиса
+LINUX|systemctl enable --now <svc>|включить и запустить
+LINUX|systemctl restart <svc>|перезапуск
+LINUX|systemctl list-units --failed|упавшие сервисы
+LINUX|systemctl list-timers|таймеры
+LINUX|systemctl daemon-reload|перечитать юниты
+LINUX|systemd-analyze blame|что тормозит загрузку
+LINUX|crontab -e|редактировать cron
+LINUX|crontab -l|показать cron
+LINUX|at now + 5 minutes|разовая отложенная задача
+LINUX|chmod 640 file|права владелец rw, группа r
+LINUX|chmod u+x file|сделать исполняемым
+LINUX|chmod -R go-rwx ~/.ssh|закрыть .ssh от других
+LINUX|chown -R user:group dir|сменить владельца
+LINUX|chattr +i file|сделать файл неизменяемым
+LINUX|lsattr file|атрибуты файла
+LINUX|getfacl file|ACL файла
+LINUX|setfacl -m u:name:rw file|выдать права пользователю
+LINUX|umask 027|маска прав по умолчанию
+LINUX|id|uid, gid, группы
+LINUX|whoami|текущий пользователь
+LINUX|who -a|кто в системе
+LINUX|w|кто и что делает
+LINUX|last -a|история входов
+LINUX|lastb|неудачные входы
+LINUX|lastlog|последний вход каждого
+LINUX|useradd -m -s /bin/bash name|создать пользователя
+LINUX|passwd name|сменить пароль
+LINUX|usermod -aG sudo name|добавить в sudo
+LINUX|userdel -r name|удалить пользователя с домашней
+LINUX|passwd -l name|заблокировать учётку
+LINUX|chage -l name|срок действия пароля
+LINUX|visudo|безопасная правка sudoers
+LINUX|sudo -l|что мне разрешено через sudo
+LINUX|su - name|войти как пользователь
+LINUX|env|переменные окружения
+LINUX|export VAR=val|задать переменную
+LINUX|alias ll='ls -lah'|алиас
+LINUX|history | grep cmd|поиск в истории
+LINUX|!!|повторить прошлую команду
+LINUX|sudo !!|повторить с sudo
+LINUX|Ctrl+R|поиск по истории
+LINUX|tar czf a.tgz dir|упаковать
+LINUX|tar xzf a.tgz -C dir|распаковать
+LINUX|tar tf a.tar|содержимое архива
+LINUX|zip -r a.zip dir|zip
+LINUX|unzip -l a.zip|содержимое zip
+LINUX|7z a -p a.7z dir|архив с паролем
+LINUX|gzip -k file|сжать, сохранив оригинал
+LINUX|xz -9 file|максимальное сжатие
+LINUX|rsync -avz --progress src/ user@host:dst/|синхронизация по ssh
+LINUX|rsync -a --delete src/ dst/|зеркалирование
+LINUX|scp file user@host:/path|копирование по ssh
+LINUX|dd if=a of=b bs=4M status=progress|копирование блоков (осторожно с of=)
+LINUX|watch -n 2 cmd|повторять команду
+LINUX|tee file|писать и в файл, и на экран
+LINUX|cmd > f 2>&1|stdout и stderr в файл
+LINUX|cmd &>/dev/null|заглушить вывод
+LINUX|nohup cmd &|запуск, переживающий выход
+LINUX|screen -S name|сессия screen
+LINUX|tmux new -s name|сессия tmux
+LINUX|time cmd|замер времени
+LINUX|timeout 10 cmd|ограничить время
+LINUX|yes | cmd|автоответ y
+LINUX|column -t|ровные колонки
+LINUX|jq '.key' file.json|разбор JSON
+LINUX|jq -r '.[] | .name' f|список полей
+LINUX|yq '.a.b' f.yaml|разбор YAML
+LINUX|curl -s url | jq .|запрос и красивый JSON
+LINUX|base64 file|кодирование base64
+LINUX|base64 -d|декодирование base64
+LINUX|xxd file | head|hex-дамп
+LINUX|hexdump -C file|hex-дамп
+LINUX|strings file|читаемые строки в бинарнике
+LINUX|od -c file|символы файла
+LINUX|diff -u a b|разница файлов
+LINUX|comm -12 a b|общие строки
+LINUX|md5sum / sha256sum file|контрольная сумма
+LINUX|sha256sum -c sums.txt|проверка сумм
+LINUX|apt update && apt upgrade|обновление Debian/Ubuntu
+LINUX|apt list --upgradable|доступные обновления
+LINUX|apt install <pkg>|установка
+LINUX|apt remove --purge <pkg>|удалить с конфигами
+LINUX|apt autoremove|убрать лишнее
+LINUX|apt-cache policy <pkg>|версии пакета
+LINUX|dpkg -l|список пакетов
+LINUX|dpkg -S /path/file|какому пакету принадлежит файл
+LINUX|dpkg --verify|проверить целостность пакетов
+LINUX|debsums -c|изменённые файлы пакетов
+LINUX|dnf update|обновление Fedora/RHEL
+LINUX|dnf history|история операций
+LINUX|rpm -qa|пакеты RPM
+LINUX|rpm -V <pkg>|проверка файлов пакета
+LINUX|pacman -Syu|обновление Arch
+LINUX|snap list|snap-пакеты
+LINUX|flatpak list|flatpak-пакеты
+LINUX|unattended-upgrades|автообновления безопасности Debian/Ubuntu
+LINUX|uname -a|версия ядра
+LINUX|lsb_release -a|версия дистрибутива
+LINUX|cat /etc/os-release|версия ОС
+LINUX|hostnamectl|имя хоста и ОС
+LINUX|timedatectl|время и часовой пояс
+LINUX|lscpu|процессор
+LINUX|lspci / lsusb|PCI и USB устройства
+LINUX|dmidecode -t system|данные BIOS/железа
+LINUX|sensors|температуры
+LINUX|smartctl -a /dev/sda|состояние диска
+LINUX|ulimit -a|лимиты процесса
+LINUX|sysctl -a|параметры ядра
+LINUX|sysctl -w net.ipv4.ip_forward=0|выключить форвардинг
+LINUX|lsmod|модули ядра
+LINUX|modinfo <mod>|инфо о модуле
+LINUX|chroot /newroot|смена корня
+LINUX|ldd /bin/ls|зависимости бинарника
+LINUX|readelf -h file|заголовок ELF
+LINUX|objdump -d file|дизассемблер
+LINUX|nm file|символы
+LINUX|ldconfig -p|кэш библиотек
+LINUX|LD_LIBRARY_PATH=. ./app|путь к библиотекам
+LINUX|logrotate -d /etc/logrotate.conf|проверка ротации логов
+LINUX|rsyslog / journald|системные логи
+LINUX|/var/log/auth.log|логи входов (Debian)
+LINUX|/var/log/secure|логи входов (RHEL)
+LINUX|/etc/passwd /etc/shadow|учётки и хеши (доступ только root)
+LINUX|/etc/hosts|локальный DNS
+LINUX|/etc/resolv.conf|DNS-серверы
+LINUX|/etc/fstab|автомонтирование
+LINUX|/etc/crontab|системный cron
+WIN|ipconfig /all|все сетевые настройки
+WIN|ipconfig /flushdns|сбросить DNS-кэш
+WIN|ipconfig /displaydns|показать DNS-кэш
+WIN|netstat -ano|соединения и PID
+WIN|netstat -abno|соединения с именами программ (от админа)
+WIN|tasklist /svc|процессы и службы
+WIN|tasklist /fi "pid eq 1234"|процесс по PID
+WIN|taskkill /f /pid 1234|убить процесс
+WIN|taskkill /f /im app.exe|убить по имени
+WIN|sfc /scannow|проверка системных файлов
+WIN|DISM /Online /Cleanup-Image /RestoreHealth|починка образа Windows
+WIN|chkdsk C: /f|проверка диска
+WIN|systeminfo|сведения о системе и патчах
+WIN|wmic qfe list|установленные обновления
+WIN|whoami /all|пользователь, группы, привилегии
+WIN|whoami /priv|привилегии токена
+WIN|net user|локальные пользователи
+WIN|net user <name> /active:no|отключить учётку
+WIN|net localgroup administrators|кто админ
+WIN|net share|сетевые папки
+WIN|net use|подключённые сетевые диски
+WIN|net start / net stop <svc>|запуск и остановка службы
+WIN|sc query state= all|все службы
+WIN|sc qc <svc>|конфигурация службы
+WIN|sc config <svc> start= disabled|отключить службу
+WIN|schtasks /query /fo LIST /v|задачи планировщика
+WIN|reg query HKLM\Software\Microsoft\Windows\CurrentVersion\Run|автозапуск (реестр)
+WIN|reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Run|автозапуск пользователя
+WIN|reg export HKLM\Software file.reg|бэкап ветки реестра
+WIN|wevtutil qe Security /c:20 /f:text|последние события Security
+WIN|wevtutil el|список журналов событий
+WIN|eventvwr|просмотр событий
+WIN|msinfo32|сведения о системе
+WIN|services.msc|службы
+WIN|taskschd.msc|планировщик
+WIN|regedit|реестр
+WIN|gpedit.msc|групповые политики
+WIN|gpresult /r|применённые политики
+WIN|gpupdate /force|обновить политики
+WIN|lusrmgr.msc|локальные пользователи и группы
+WIN|compmgmt.msc|управление компьютером
+WIN|perfmon|монитор производительности
+WIN|resmon|монитор ресурсов
+WIN|wf.msc|брандмауэр в режиме повышенной безопасности
+WIN|netsh advfirewall show allprofiles|состояние брандмауэра
+WIN|netsh advfirewall firewall add rule name="x" dir=in action=block protocol=TCP localport=445|заблокировать порт
+WIN|netsh interface ip show config|IP-настройки
+WIN|netsh wlan show profiles|сохранённые Wi-Fi профили
+WIN|netsh wlan show interfaces|текущее Wi-Fi соединение
+WIN|netsh winsock reset|сброс сетевого стека
+WIN|route print|таблица маршрутов
+WIN|arp -a|ARP-таблица
+WIN|nslookup host|DNS-запрос
+WIN|tracert host|трассировка
+WIN|pathping host|трассировка со статистикой потерь
+WIN|ping -t host|бесконечный пинг
+WIN|getmac|MAC-адреса
+WIN|hostname|имя компьютера
+WIN|where cmd|путь команды
+WIN|dir /a /s name|поиск файла
+WIN|dir /q|владельцы файлов
+WIN|attrib +h +s file|скрыть файл
+WIN|icacls path|права на файл
+WIN|icacls path /grant user:F|выдать полный доступ
+WIN|takeown /f path /r|стать владельцем
+WIN|cipher /w:C:|затереть свободное место
+WIN|certutil -hashfile file SHA256|хеш файла
+WIN|certutil -encode in out|base64-кодирование
+WIN|robocopy src dst /MIR|зеркальное копирование
+WIN|xcopy src dst /E /I|копирование деревьев
+WIN|fc a b|сравнить файлы
+WIN|findstr /s /i "text" *.*|поиск текста
+WIN|type file|вывести файл
+WIN|more file|постраничный вывод
+WIN|clip < file|в буфер обмена
+WIN|set|переменные окружения
+WIN|setx VAR val|постоянная переменная
+WIN|echo %PATH%|PATH
+WIN|start "" path|открыть файл/программу
+WIN|shutdown /r /t 0|перезагрузка
+WIN|shutdown /a|отменить выключение
+WIN|bcdedit|настройки загрузки
+WIN|manage-bde -status|статус BitLocker
+WIN|powercfg /batteryreport|отчёт батареи
+WIN|powercfg /energy|отчёт энергопотребления
+WIN|winget search <name>|найти программу
+WIN|winget install <id>|установить
+WIN|winget upgrade --all|обновить всё
+WIN|winget list|установленное
+WIN|winget export -o apps.json|экспорт списка программ
+WIN|choco install <pkg>|установка через Chocolatey
+WIN|scoop install <pkg>|установка через Scoop
+WIN|wsl --install|установить WSL
+WIN|wsl -l -v|список дистрибутивов WSL
+WIN|wsl --update|обновить WSL
+WIN|wsl --shutdown|остановить WSL
+WIN|mstsc|удалённый рабочий стол
+WIN|Get-Process|процессы (PowerShell)
+WIN|Get-Process | Sort CPU -desc | select -first 10|топ по CPU
+WIN|Get-Service|службы
+WIN|Get-Service | ? Status -eq Running|работающие службы
+WIN|Get-EventLog -LogName Security -Newest 50|последние события безопасности
+WIN|Get-WinEvent -FilterHashtable @{LogName='Security';Id=4625}|неудачные входы
+WIN|Get-WinEvent -FilterHashtable @{LogName='Security';Id=4624}|успешные входы
+WIN|Get-ChildItem -Recurse -Filter *.log|найти файлы
+WIN|Get-ChildItem | Sort Length -desc|сортировка по размеру
+WIN|Get-Content file -Wait|tail -f в PowerShell
+WIN|Select-String -Path *.txt -Pattern "x"|поиск текста
+WIN|Get-FileHash file -Algorithm SHA256|хеш файла
+WIN|Get-NetTCPConnection -State Listen|слушающие порты
+WIN|Get-NetTCPConnection | group State|соединения по состояниям
+WIN|Get-NetFirewallRule -Enabled True|включённые правила брандмауэра
+WIN|New-NetFirewallRule -DisplayName x -Direction Inbound -Action Block -LocalPort 23 -Protocol TCP|блок порта
+WIN|Get-NetAdapter|сетевые адаптеры
+WIN|Test-NetConnection host -Port 443|проверка порта
+WIN|Resolve-DnsName host|DNS-запрос
+WIN|Get-LocalUser|локальные пользователи
+WIN|Get-LocalGroupMember Administrators|члены группы админов
+WIN|Get-ScheduledTask|задачи планировщика
+WIN|Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Run|автозапуск
+WIN|Get-HotFix|установленные патчи
+WIN|Get-ComputerInfo|сведения о системе
+WIN|Get-CimInstance Win32_OperatingSystem|версия ОС
+WIN|Get-Disk / Get-Volume|диски и тома
+WIN|Get-MpComputerStatus|состояние Defender
+WIN|Start-MpScan -ScanType QuickScan|быстрое сканирование Defender
+WIN|Update-MpSignature|обновить базы Defender
+WIN|Get-MpThreatDetection|обнаруженные угрозы Defender
+WIN|Get-AuthenticodeSignature file|проверка цифровой подписи
+WIN|Get-ExecutionPolicy|политика запуска скриптов
+WIN|Set-ExecutionPolicy RemoteSigned -Scope CurrentUser|разрешить свои скрипты
+WIN|Invoke-WebRequest url -OutFile f|скачать файл
+WIN|Invoke-RestMethod url|REST-запрос с разбором JSON
+WIN|ConvertTo-Json / ConvertFrom-Json|JSON в PowerShell
+WIN|Import-Csv f.csv|чтение CSV
+WIN|Export-Csv f.csv -NoTypeInformation|запись CSV
+WIN|Measure-Object -Sum Length|подсчёт
+WIN|Where-Object { $_.X -gt 1 }|фильтр
+WIN|ForEach-Object { }|цикл по конвейеру
+WIN|Out-GridView|таблица с фильтром
+WIN|Compress-Archive a b.zip|zip
+WIN|Expand-Archive b.zip -Dest d|распаковать zip
+WIN|Enter-PSSession host|удалённый PowerShell
+WIN|Invoke-Command -ComputerName h -ScriptBlock {}|команда на удалённой машине
+WIN|Get-Help <cmd> -Examples|примеры по команде
+WIN|Get-Command *name*|найти команду
+WIN|Get-Member|свойства объекта
+WIN|Start-Transcript|запись сессии в файл
+WIN|PSScriptAnalyzer|линтер PowerShell
+WIN|Sysinternals Autoruns|всё, что запускается автоматически
+WIN|Sysinternals Process Explorer|продвинутый диспетчер задач
+WIN|Sysinternals TCPView|сетевые соединения по процессам
+WIN|Sysinternals Procmon|монитор файлов/реестра/процессов
+WIN|Sysinternals sigcheck -u -e C:\Windows|поиск неподписанных файлов
+WIN|Sysinternals Sysmon|расширенный журнал событий для защиты
+WIN|Sysinternals handle.exe|кто держит файл
+NET|ping -c 4 host|проверка доступности
+NET|traceroute host|маршрут пакетов
+NET|mtr host|трассировка в реальном времени
+NET|ip a|интерфейсы и адреса
+NET|ip r|маршруты
+NET|ip neigh|ARP/NDP таблица
+NET|ip link set eth0 up|включить интерфейс
+NET|ip addr add 10.0.0.5/24 dev eth0|добавить адрес
+NET|ss -tulpn|слушающие порты и процессы
+NET|ss -s|сводка по сокетам
+NET|ss -o state established|установленные соединения
+NET|netstat -tulpn|слушающие порты (старый вариант)
+NET|nc -zv host 1-1000|проверка портов
+NET|nc -l 9000|слушать порт
+NET|curl -I url|только заголовки
+NET|curl -v url|подробный запрос
+NET|curl -X POST -d 'a=b' url|POST
+NET|curl -H "Authorization: Bearer T" url|заголовок
+NET|curl -o f url|скачать в файл
+NET|curl -L url|идти по редиректам
+NET|curl -k url|не проверять сертификат (только для тестов)
+NET|curl --resolve host:443:1.2.3.4 https://host|подмена DNS для теста
+NET|curl -w "%{time_total}\n" -o /dev/null -s url|время ответа
+NET|wget -r -np url|скачать каталог
+NET|wget -c url|докачка
+NET|dig host|DNS-запрос
+NET|dig +short host|коротко
+NET|dig host MX|почтовые записи
+NET|dig host TXT|TXT (SPF, DKIM)
+NET|dig -x 1.2.3.4|обратный DNS
+NET|dig @8.8.8.8 host|через конкретный DNS
+NET|dig host +trace|полный путь резолвинга
+NET|dig axfr domain @ns|проверка, не разрешена ли передача зоны (свой DNS)
+NET|nslookup host|DNS
+NET|host host|DNS простой
+NET|whois domain|регистрационные данные домена
+NET|tcpdump -i eth0 port 80|перехват трафика
+NET|tcpdump -i any -w cap.pcap|запись в файл
+NET|tcpdump -nn -r cap.pcap|чтение дампа
+NET|tcpdump host 1.2.3.4|трафик с хостом
+NET|tshark -r cap.pcap -Y http|фильтр в консоли Wireshark
+NET|tshark -i eth0 -f "port 53"|захват DNS
+NET|wireshark filter: ip.addr==1.2.3.4|фильтр по адресу
+NET|wireshark filter: tcp.flags.syn==1 && tcp.flags.ack==0|SYN-пакеты
+NET|wireshark filter: http.request|HTTP-запросы
+NET|wireshark filter: dns|DNS-трафик
+NET|iftop|трафик по соединениям
+NET|nload|график трафика
+NET|vnstat|статистика трафика
+NET|iperf3 -s / iperf3 -c host|измерение скорости сети
+NET|ethtool eth0|параметры сетевой карты
+NET|arp -a|ARP-таблица
+NET|arping host|ARP-пинг
+NET|nmcli device wifi list|Wi-Fi сети
+NET|nmcli con show|соединения NetworkManager
+NET|resolvectl status|DNS через systemd-resolved
+NET|ssh user@host|вход по SSH
+NET|ssh -p 2222 user@host|нестандартный порт
+NET|ssh -i key user@host|вход по ключу
+NET|ssh -L 8080:localhost:80 host|локальный проброс порта
+NET|ssh -R 9000:localhost:22 host|обратный проброс
+NET|ssh -D 1080 host|SOCKS-прокси через SSH
+NET|ssh -J jump user@target|через jump-хост
+NET|ssh-keygen -t ed25519 -C "me"|создать ключ ed25519
+NET|ssh-copy-id user@host|положить ключ на сервер
+NET|ssh-add -l|ключи в агенте
+NET|ssh-keyscan host|получить публичные ключи хоста
+NET|ssh -vvv host|отладка подключения
+NET|ssh-keygen -lf key.pub|отпечаток ключа
+NET|~/.ssh/config|алиасы хостов и параметры SSH
+NET|sshd -T|эффективная конфигурация sshd
+NET|sshd_config: PasswordAuthentication no|запретить вход по паролю
+NET|sshd_config: PermitRootLogin no|запретить вход root
+NET|sshd_config: AllowUsers name|разрешить только перечисленных
+NET|sshd_config: MaxAuthTries 3|ограничить попытки
+NET|sshd_config: Port 2222|сменить порт (не защита, но шумит меньше)
+NET|ufw status verbose|состояние ufw
+NET|ufw default deny incoming|запретить входящие по умолчанию
+NET|ufw allow 22/tcp|разрешить порт
+NET|ufw limit ssh|ограничить частоту подключений
+NET|ufw enable|включить файрвол
+NET|iptables -L -n -v|правила iptables
+NET|iptables -A INPUT -p tcp --dport 22 -j ACCEPT|разрешить SSH
+NET|iptables -P INPUT DROP|политика по умолчанию — запрет
+NET|iptables-save > rules.v4|сохранить правила
+NET|nft list ruleset|правила nftables
+NET|firewall-cmd --list-all|правила firewalld
+NET|firewall-cmd --add-service=https --permanent|разрешить сервис
+NET|fail2ban-client status sshd|кто забанен
+NET|fail2ban-client set sshd unbanip 1.2.3.4|разбанить
+NET|openssl s_client -connect host:443|проверка TLS
+NET|openssl s_client -connect host:443 -servername host|TLS с SNI
+NET|openssl x509 -in c.pem -noout -text|разбор сертификата
+NET|openssl x509 -in c.pem -noout -dates|сроки сертификата
+NET|openssl verify -CAfile ca.pem c.pem|проверка цепочки
+NET|testssl.sh host:443|аудит настроек TLS
+NET|sslscan host|шифры и протоколы сервера
+NET|nginx -t|проверка конфига nginx
+NET|nginx -s reload|перечитать конфиг
+NET|apachectl configtest|проверка конфига Apache
+NET|certbot certonly --standalone -d host|бесплатный сертификат Let's Encrypt
+NET|certbot renew --dry-run|проверка автообновления
+NET|ip route get 8.8.8.8|по какому маршруту уйдёт трафик
+NET|ip -s link|статистика интерфейсов
+NET|bridge / brctl show|мосты
+NET|wg show|состояние WireGuard
+NET|wg-quick up wg0|поднять WireGuard
+NET|openvpn --config c.ovpn|подключение OpenVPN
+NET|socat TCP-LISTEN:8080,fork TCP:host:80|переадресация портов
+NET|proxychains cmd|трафик через прокси
+NET|dnsmasq|лёгкий DNS/DHCP
+NET|unbound-control stats|статистика DNS-резолвера
+NET|CIDR: 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16|частные диапазоны IPv4
+NET|ports: 22 ssh, 53 dns, 80 http, 443 https|частые порты
+NET|ports: 25/465/587 smtp, 110/995 pop3, 143/993 imap|почтовые порты
+NET|ports: 3306 mysql, 5432 postgres, 6379 redis, 27017 mongo|порты БД
+NET|ports: 3389 rdp, 445 smb, 5985/5986 winrm|Windows-сервисы
+NET|ports: 389/636 ldap, 88 kerberos|каталог и аутентификация
+SEC|nmap -sn 192.168.1.0/24|какие устройства живы в СВОЕЙ сети
+SEC|nmap -sV -p- host|открытые порты и версии на своём хосте
+SEC|nmap -sV --script vuln host|проверка известных уязвимостей на своём хосте
+SEC|nmap -O host|определение ОС своего хоста
+SEC|nmap -sU --top-ports 50 host|топ UDP-портов
+SEC|nmap --script ssl-enum-ciphers -p 443 host|шифры TLS на своём сервере
+SEC|nmap -oA scan host|сохранить результат во всех форматах
+SEC|nmap -Pn host|не пинговать (если ICMP закрыт)
+SEC|правило: сканируй только свои системы или с письменного разрешения|этика и закон
+SEC|rustscan -a host|быстрый сканер портов своего хоста
+SEC|masscan --rate 1000 -p80,443 range|быстрый сканер своих диапазонов
+SEC|nikto -h https://host|сканер веб-сервера (свой, с разрешения)
+SEC|nuclei -u https://host|шаблонный сканер уязвимостей (свои системы)
+SEC|zap-baseline.py -t https://host|базовая проверка OWASP ZAP
+SEC|sqlmap -u "url?id=1" --batch|проверка своего приложения на SQL-инъекции
+SEC|gobuster dir -u url -w list|поиск скрытых путей на своём сайте
+SEC|ffuf -u url/FUZZ -w list|перебор путей на своём сайте
+SEC|wpscan --url https://host|аудит своего WordPress
+SEC|lynis audit system|аудит безопасности Linux
+SEC|chkrootkit|поиск руткитов
+SEC|rkhunter --check|поиск руткитов и подозрительных изменений
+SEC|clamscan -r --bell -i /home|антивирусная проверка ClamAV
+SEC|freshclam|обновить базы ClamAV
+SEC|aide --check|проверка целостности файлов
+SEC|aide --init|создать базу эталонных хешей
+SEC|tripwire --check|контроль целостности
+SEC|auditctl -l|правила аудита ядра
+SEC|auditctl -w /etc/passwd -p wa -k passwd|следить за изменениями файла
+SEC|ausearch -k passwd|события по ключу аудита
+SEC|aureport --auth|отчёт по аутентификации
+SEC|osquery: SELECT * FROM listening_ports;|SQL по состоянию системы
+SEC|osquery: SELECT * FROM startup_items;|что запускается при старте
+SEC|ossec / wazuh|система обнаружения вторжений на хостах
+SEC|suricata -i eth0|сетевая система обнаружения вторжений
+SEC|snort -A console -c snort.conf|IDS Snort
+SEC|zeek -i eth0|анализ сетевого трафика Zeek
+SEC|fail2ban|банит IP после неудачных входов
+SEC|crowdsec|совместная защита от атак на сервер
+SEC|logwatch|сводка логов на почту
+SEC|goaccess access.log|анализ логов веб-сервера
+SEC|grep "Failed password" /var/log/auth.log|неудачные входы SSH
+SEC|grep "Failed password" auth.log | awk '{print $(NF-3)}' | sort | uniq -c | sort -nr|кто чаще всего ломится
+SEC|journalctl -u ssh | grep Invalid|неверные пользователи
+SEC|last -f /var/log/btmp|неудачные входы
+SEC|awk '$9==404' access.log | wc -l|подсчёт 404 в логе
+SEC|awk '{print $1}' access.log | sort | uniq -c | sort -nr | head|топ IP по запросам
+SEC|ss -tnp | grep ESTAB|кто сейчас подключён
+SEC|chkconfig / systemctl list-unit-files --state=enabled|что включено в автозапуск
+SEC|find / -mtime -1 -type f 2>/dev/null|что менялось за сутки (поиск следов взлома)
+SEC|find / -nouser -o -nogroup 2>/dev/null|файлы без владельца
+SEC|awk -F: '$3==0' /etc/passwd|кроме root есть ли uid 0
+SEC|awk -F: '$2==""' /etc/shadow|учётки без пароля
+SEC|cat ~/.ssh/authorized_keys|кто может войти по ключу
+SEC|crontab -l; ls /etc/cron.*|что запускается по расписанию (проверка на закладки)
+SEC|lsmod | head|загруженные модули ядра
+SEC|ps auxf|дерево процессов для поиска странного
+SEC|ls -la /tmp /var/tmp /dev/shm|частые места для подозрительных файлов
+SEC|debsums -s|пакеты с изменёнными файлами
+SEC|rpm -Va|изменённые файлы RPM
+SEC|checksec --file=bin|защиты бинарника (NX, PIE, RELRO, canary)
+SEC|apparmor_status|состояние AppArmor
+SEC|getenforce / sestatus|состояние SELinux
+SEC|setenforce 1|включить SELinux enforcing
+SEC|ausearch -m avc|отказы SELinux
+SEC|sysctl kernel.randomize_va_space|ASLR (должно быть 2)
+SEC|sysctl net.ipv4.conf.all.rp_filter=1|защита от подмены адреса
+SEC|sysctl net.ipv4.tcp_syncookies=1|защита от SYN-флуда
+SEC|mount -o remount,noexec /tmp|запрет запуска из /tmp
+SEC|ufw / nftables default deny|принцип «запрещено всё, что не разрешено»
+SEC|principle of least privilege|минимум прав — основа защиты
+SEC|defense in depth|несколько слоёв защиты
+SEC|2FA/MFA везде|вторая ступень входа
+SEC|keepassxc|локальный менеджер паролей
+SEC|bitwarden|менеджер паролей
+SEC|passphrase 5+ слов|длинная фраза лучше сложного короткого пароля
+SEC|haveibeenpwned.com|проверка, не утекла ли почта/пароль
+SEC|gpg --full-generate-key|создать GPG-ключ
+SEC|gpg --list-keys|список ключей
+SEC|gpg -c file|зашифровать паролем
+SEC|gpg -e -r user file|зашифровать для получателя
+SEC|gpg -d file.gpg|расшифровать
+SEC|gpg --sign / --verify|подпись и проверка
+SEC|age -p file > file.age|простое современное шифрование
+SEC|veracrypt|зашифрованные тома и диски
+SEC|cryptsetup luksFormat /dev/sdX|шифрование диска LUKS
+SEC|cryptsetup open /dev/sdX name|открыть LUKS-раздел
+SEC|bitlocker: manage-bde -on C:|шифрование диска Windows
+SEC|shred -u file|затереть и удалить файл
+SEC|sudo apt install unattended-upgrades|автоматические обновления безопасности
+SEC|CVE search: cve.mitre.org|реестр уязвимостей
+SEC|nvd.nist.gov|база уязвимостей NIST
+SEC|exploit-db.com|архив публичных эксплойтов (для понимания и защиты)
+SEC|cvss score|оценка серьёзности уязвимости 0-10
+SEC|MITRE ATT&CK|матрица тактик и техник атакующих (для защитников)
+SEC|OWASP Top 10|главные риски веб-приложений
+SEC|OWASP ASVS|стандарт проверки безопасности приложений
+SEC|OWASP Cheat Sheet Series|памятки по безопасной разработке
+SEC|CIS Benchmarks|эталонные настройки систем
+SEC|NIST CSF|рамка управления рисками
+SEC|ISO 27001|стандарт системы ИБ
+SEC|STRIDE|модель угроз: подмена, изменение, отказ, раскрытие, DoS, повышение прав
+SEC|threat modeling|разбор «что может пойти не так» до написания кода
+SEC|SAST: semgrep --config auto .|статический анализ кода на уязвимости
+SEC|SAST: bandit -r .|поиск небезопасного Python-кода
+SEC|SAST: gosec ./...|поиск проблем в Go
+SEC|SAST: cppcheck --enable=all .|анализ C/C++
+SEC|SAST: eslint-plugin-security|правила безопасности для JS
+SEC|SAST: brakeman|анализ Ruby on Rails
+SEC|SAST: CodeQL|глубокий анализ кода на GitHub
+SEC|DAST: OWASP ZAP|динамический анализ работающего приложения
+SEC|SCA: pip-audit|уязвимости зависимостей Python
+SEC|SCA: npm audit|уязвимости зависимостей Node
+SEC|SCA: cargo audit|уязвимости зависимостей Rust
+SEC|SCA: osv-scanner .|единый сканер зависимостей
+SEC|SCA: dependabot / renovate|автообновление зависимостей
+SEC|gitleaks detect|поиск секретов в репозитории
+SEC|trufflehog git file://.|поиск ключей и токенов в истории
+SEC|pre-commit hooks|проверки до коммита
+SEC|SBOM: syft <img>|список компонентов образа/проекта
+SEC|grype <img>|уязвимости по SBOM
+SEC|cosign sign <img>|подпись образов
+SEC|sigstore|подпись и проверка артефактов
+SEC|SLSA|уровни защищённости цепочки поставки
+SEC|secrets: не хранить в коде, в .env вне git|базовое правило
+SEC|vault kv get secret/app|секреты в HashiCorp Vault
+SEC|sops -e file.yaml|шифрование секретов в репозитории
+SEC|rotate keys after leak|после утечки — сразу перевыпустить ключи
+SEC|incident response: изолировать, сохранить, расследовать|порядок действий при взломе
+SEC|dd / FTK Imager: образ диска для расследования|сохранение улик
+SEC|volatility3 -f mem.raw windows.pslist|анализ дампа памяти (расследование)
+SEC|autopsy|разбор образа диска
+SEC|plaso / log2timeline|временная шкала событий
+SEC|yara -r rules.yar dir|правила поиска вредоносных образцов (для защитников)
+SEC|virustotal.com|проверка файла и ссылки по десяткам антивирусов
+SEC|any.run / hybrid-analysis|песочница для анализа подозрительных файлов
+SEC|cuckoo / CAPE|свои песочницы для анализа
+SEC|strings -n 8 sample|читаемые строки в подозрительном файле (в изолированной среде)
+SEC|ghidra|бесплатный реверс-инжиниринг от АНБ
+SEC|radare2 / rizin|консольный реверс
+SEC|x64dbg|отладчик Windows
+SEC|IDA Free|дизассемблер
+SEC|die (Detect It Easy)|определение упаковщика и компилятора
+SEC|PE-bear / pestudio|разбор PE-файлов
+SEC|capa file|что умеет программа по её коду
+SEC|flare-floss file|извлечение скрытых строк
+SEC|burpsuite|прокси для проверки своих веб-приложений
+SEC|mitmproxy|перехват HTTPS своего трафика для отладки
+SEC|caido|лёгкая альтернатива Burp
+SEC|hashcat --help|восстановление своих забытых паролей и аудит стойкости хешей
+SEC|john --test|тест John the Ripper
+SEC|hydra: только по своим учёткам|проверка слабых паролей своих сервисов
+SEC|metasploit: msfconsole|фреймворк для проверки своих систем (с разрешения)
+SEC|searchsploit name|поиск публичных эксплойтов для патч-менеджмента
+SEC|bloodhound|анализ путей повышения прав в своём AD
+SEC|ldapsearch -x -H ldap://dc -b "dc=x,dc=y"|запросы к своему LDAP
+SEC|kerberos: klist|билеты Kerberos
+SEC|AD: Get-ADUser -Filter *|пользователи домена
+SEC|AD: Get-ADGroupMember "Domain Admins"|кто доменный админ
+SEC|AD: Get-ADComputer -Filter *|компьютеры домена
+SEC|AD: PingCastle|отчёт о здоровье Active Directory
+SEC|LAPS|уникальные пароли локальных админов
+SEC|WSUS / Windows Update for Business|управление обновлениями
+SEC|Windows: AppLocker / WDAC|белые списки программ
+SEC|Windows: Credential Guard|защита учётных данных
+SEC|Windows: ASR rules|правила уменьшения поверхности атаки Defender
+SEC|Windows: Event ID 4624/4625|успешный и неудачный вход
+SEC|Windows: Event ID 4672|вход с особыми привилегиями
+SEC|Windows: Event ID 4688|создание процесса
+SEC|Windows: Event ID 7045|установка новой службы
+SEC|Windows: Event ID 1102|очистка журнала Security
+SEC|phishing: проверь домен, заголовки письма, не открывай вложения|защита от фишинга
+SEC|SPF/DKIM/DMARC|защита домена от подделки писем
+SEC|dig txt _dmarc.domain|проверка DMARC
+SEC|mxtoolbox.com|проверка почтовых записей
+SEC|shodan.io|что про твой IP видно в интернете
+SEC|censys.io|поиск открытых сервисов (проверь свои)
+SEC|securityheaders.com|оценка заголовков безопасности сайта
+SEC|ssllabs.com/ssltest|оценка TLS сайта
+SEC|observatory.mozilla.org|проверка безопасности сайта
+SEC|CTF: picoctf.org|учебные соревнования для начинающих
+SEC|CTF: tryhackme.com|обучение безопасности в браузере
+SEC|CTF: hackthebox.com|тренировка на специально созданных машинах
+SEC|CTF: overthewire.org|игры по Linux и безопасности
+SEC|CTF: portswigger.net/web-security|бесплатная академия веб-безопасности
+SEC|CTF: ctftime.org|календарь соревнований
+SEC|Bug bounty: hackerone.com|легальный поиск уязвимостей за награду
+SEC|Bug bounty: bugcrowd.com|платформа bug bounty
+SEC|responsible disclosure|сообщи вендору, дай время на исправление
+CRYPTO|sha256sum file|хеш SHA-256
+CRYPTO|openssl dgst -sha256 file|хеш через OpenSSL
+CRYPTO|openssl rand -hex 32|случайный ключ
+CRYPTO|openssl genrsa -out k.pem 4096|RSA-ключ
+CRYPTO|openssl req -new -x509 -key k.pem -out c.pem -days 365|самоподписанный сертификат
+CRYPTO|openssl enc -aes-256-cbc -pbkdf2 -in f -out f.enc|шифрование файла
+CRYPTO|openssl pkcs12 -export -in c.pem -inkey k.pem -out c.p12|упаковка в PKCS12
+CRYPTO|openssl ecparam -genkey -name prime256v1|ключ на эллиптической кривой
+CRYPTO|bcrypt / argon2id|правильное хранение паролей (с солью)
+CRYPTO|MD5 и SHA-1|устарели, не для безопасности
+CRYPTO|AES-GCM / ChaCha20-Poly1305|современное шифрование с аутентификацией
+CRYPTO|Ed25519|современные подписи
+CRYPTO|TLS 1.3|актуальная версия TLS
+CRYPTO|HMAC|подпись сообщения общим ключом
+CRYPTO|JWT: проверяй подпись и alg|частая ошибка — доверять токену без проверки
+CRYPTO|CSPRNG: secrets / /dev/urandom|только криптостойкие случайные числа
+CRYPTO|не изобретай свою криптографию|используй проверенные библиотеки
+CRYPTO|libsodium|простая и безопасная криптобиблиотека
+CRYPTO|base64 — не шифрование|это лишь кодирование
+CRYPTO|rot13 / xor — не защита|учебные шифры
+CRYPTO|cyberchef|онлайн-комбайн кодирования и разбора данных
+CRYPTO|echo -n text | sha256sum|хеш строки без перевода строки
+PY|python -m venv .venv|виртуальное окружение
+PY|source .venv/bin/activate|активировать (Linux)
+PY|.venv\Scripts\activate|активировать (Windows)
+PY|pip install -r requirements.txt|установить зависимости
+PY|pip freeze > requirements.txt|зафиксировать зависимости
+PY|pip list --outdated|устаревшие пакеты
+PY|pip install --upgrade pip|обновить pip
+PY|python -m http.server 8000|быстрый веб-сервер из папки
+PY|python -m json.tool f.json|красивый JSON
+PY|python -m pdb script.py|отладчик
+PY|python -m timeit "code"|замер скорости
+PY|python -m cProfile -s cumtime s.py|профилирование
+PY|python -m pytest -x -q|тесты, остановка на первой ошибке
+PY|python -m pytest -k name|тест по имени
+PY|python -m unittest|стандартные тесты
+PY|python -m black . / ruff check .|форматирование и линтер
+PY|python -m mypy .|проверка типов
+PY|uv pip install pkg|очень быстрый установщик
+PY|poetry add pkg|зависимости через Poetry
+PY|pyinstaller --onefile s.py|собрать exe
+PY|with open(p, encoding="utf-8") as f:|безопасное чтение файла
+PY|pathlib.Path(p).read_text()|чтение файла кратко
+PY|json.load / json.dump|JSON
+PY|csv.DictReader|чтение CSV по именам колонок
+PY|argparse|аргументы командной строки
+PY|subprocess.run([...], capture_output=True, text=True)|запуск программ без shell
+PY|subprocess shell=True опасно|риск инъекции команд
+PY|os.environ.get("KEY")|переменные окружения
+PY|logging.basicConfig(level=logging.INFO)|логирование
+PY|requests.get(url, timeout=10)|HTTP-запрос с таймаутом
+PY|httpx.AsyncClient()|асинхронный HTTP
+PY|asyncio.run(main())|запуск асинхронного кода
+PY|asyncio.gather(*tasks)|параллельные задачи
+PY|threading.Thread(target=f)|потоки
+PY|multiprocessing.Pool()|процессы
+PY|concurrent.futures.ThreadPoolExecutor|пул потоков
+PY|dataclasses.dataclass|простые классы данных
+PY|typing: list[int], dict[str,int], X | None|аннотации типов
+PY|list comprehension [x for x in a if x]|генераторы списков
+PY|dict comprehension {k: v for k, v in a}|генераторы словарей
+PY|enumerate(a) / zip(a, b)|перебор с индексом / попарно
+PY|sorted(a, key=lambda x: x[1])|сортировка по ключу
+PY|collections.Counter(a)|подсчёт элементов
+PY|collections.defaultdict(list)|словарь со значением по умолчанию
+PY|itertools.groupby / chain|группировка и склейка
+PY|functools.lru_cache|кэш результатов
+PY|f"{x:.2f}"|форматирование
+PY|re.findall(r"\d+", s)|поиск чисел
+PY|datetime.now().isoformat()|время ISO
+PY|pickle.load на чужих данных опасно|риск выполнения кода
+PY|yaml.safe_load|безопасная загрузка YAML
+PY|sqlite3.connect("a.db")|встроенная БД
+PY|cursor.execute("... WHERE id=?", (x,))|параметризованный запрос (защита от SQL-инъекций)
+PY|hashlib.sha256(b).hexdigest()|хеш
+PY|secrets.token_urlsafe(32)|безопасный токен
+PY|socket.create_connection((h, p))|TCP-клиент
+PY|scapy: sniff(count=10)|разбор и создание пакетов в лаборатории
+PY|paramiko|SSH из Python
+PY|flask run --debug|запуск Flask
+PY|fastapi: uvicorn app:app --reload|запуск FastAPI
+PY|django-admin startproject x|новый проект Django
+PY|numpy / pandas / matplotlib|данные и графики
+PY|tkinter / PyQt|окна на Python
+PY|if __name__ == "__main__":|точка входа
+PY|assert x == y|проверка в тестах
+PY|try: ... except Exception as e:|обработка ошибок
+PY|raise ValueError("...")|выброс ошибки
+PY|*args, **kwargs|произвольные аргументы
+PY|lambda x: x*2|анонимная функция
+PY|__slots__|экономия памяти в классах
+PY|@property|свойства
+PY|@staticmethod / @classmethod|статические методы
+PY|with contextlib.suppress(E):|игнорировать ошибку
+PY|python -X importtime s.py|что долго импортируется
+PY|python -m venv --system-site-packages|окружение с системными пакетами
+PY|pip download pkg -d dir|скачать пакет для офлайн-установки
+C++|g++ -std=c++17 -O2 -Wall -Wextra a.cpp -o a|сборка с предупреждениями
+C++|g++ -g -O0 a.cpp|сборка для отладки
+C++|g++ -fsanitize=address,undefined -g a.cpp|поиск выходов за границы и UB
+C++|g++ -fsanitize=thread|поиск гонок данных
+C++|g++ -fstack-protector-strong -D_FORTIFY_SOURCE=2 -O2|защитные флаги сборки
+C++|g++ -Wl,-z,relro,-z,now -pie -fPIE|защита загрузки (RELRO, PIE)
+C++|g++ -E a.cpp|только препроцессор
+C++|g++ -S a.cpp|вывод ассемблера
+C++|g++ -c a.cpp|только компиляция в .o
+C++|g++ -static|статическая сборка
+C++|cmake -B build -S .|настроить сборку CMake
+C++|cmake --build build -j|собрать
+C++|ctest --test-dir build|запустить тесты
+C++|make -j$(nproc)|параллельная сборка
+C++|ninja -C build|быстрая сборка
+C++|clang-format -i a.cpp|форматирование
+C++|clang-tidy a.cpp|статический анализ
+C++|valgrind --leak-check=full ./a|утечки памяти
+C++|std::vector / std::array|динамический и фиксированный массив
+C++|std::unique_ptr / std::shared_ptr|умные указатели
+C++|std::string_view|строка без копирования
+C++|std::optional / std::variant|значение может отсутствовать / один из типов
+C++|std::span|окно над массивом с границами
+C++|std::thread / std::jthread|потоки
+C++|std::mutex / std::lock_guard|блокировки
+C++|std::atomic<T>|атомарные операции
+C++|std::async / std::future|асинхронность
+C++|std::filesystem::path|работа с путями
+C++|std::chrono|время
+C++|std::sort(a.begin(), a.end())|сортировка
+C++|std::unordered_map|хеш-таблица
+C++|RAII|ресурсы освобождаются в деструкторе
+C++|не использовать strcpy, gets, sprintf|небезопасные функции (переполнение буфера)
+C++|snprintf / strlcpy / std::string|безопасные замены
+C++|проверяй границы массивов и размеры перед memcpy|причина большинства уязвимостей
+C++|integer overflow: проверяй до арифметики|частая причина ошибок
+C++|use-after-free: обнуляй указатель после free|классическая ошибка
+C++|format string: printf("%s", s), не printf(s)|защита от инъекции формата
+C++|WinHTTP / WinINet|HTTP в Windows C++
+C++|CreateProcessW|запуск процесса в WinAPI
+C++|CreatePipe + ReadFile|читать вывод процесса
+C++|RegGetValueW|чтение реестра
+C++|GetLastError()|код ошибки WinAPI
+C++|SetWindowsHookEx|хуки Windows
+C++|windres app.rc -O coff -o app.o|компиляция ресурсов MinGW
+C++|-mwindows|GUI-приложение без консоли
+C++|-lwinhttp -lgdi32 -luser32|частые библиотеки Windows
+C++|gdb ./a|отладчик
+C++|lldb ./a|отладчик LLVM
+RUST|cargo new app|новый проект
+RUST|cargo build --release|релизная сборка
+RUST|cargo run|запуск
+RUST|cargo test|тесты
+RUST|cargo clippy|линтер
+RUST|cargo fmt|форматирование
+RUST|cargo add serde|добавить зависимость
+RUST|cargo audit|уязвимости зависимостей
+GO|go mod init name|новый модуль
+GO|go run .|запуск
+GO|go build -o app|сборка
+GO|go test ./...|тесты
+GO|go vet ./...|проверка кода
+GO|go fmt ./...|форматирование
+GO|GOOS=windows GOARCH=amd64 go build|кросс-компиляция
+GO|go get pkg@latest|добавить пакет
+JS|node -v / npm -v|версии
+JS|npm init -y|новый проект
+JS|npm install pkg|установка
+JS|npm ci|установка строго по lock-файлу
+JS|npm run build|сборка
+JS|npm audit fix|исправить уязвимости зависимостей
+JS|npm ls --depth=0|установленные пакеты
+JS|npm outdated|устаревшие пакеты
+JS|npx pkg|запуск без установки
+JS|pnpm install|быстрый менеджер пакетов
+JS|yarn add pkg|Yarn
+JS|node --inspect-brk app.js|отладка
+JS|const x = await fetch(url).then(r => r.json())|запрос и JSON
+JS|Promise.all([a, b])|параллельные промисы
+JS|array.map / filter / reduce|работа с массивами
+JS|destructuring: const {a, b} = obj|деструктуризация
+JS|optional chaining: a?.b?.c|безопасный доступ
+JS|nullish: a ?? b|значение по умолчанию
+JS|JSON.stringify(o, null, 2)|красивый JSON
+JS|localStorage / sessionStorage|хранилище браузера
+JS|textContent, не innerHTML|защита от XSS
+JS|DOMPurify.sanitize(html)|очистка HTML
+JS|eval() и new Function() не использовать|риск внедрения кода
+JS|CSP: Content-Security-Policy|заголовок против XSS
+JS|process.env.KEY|переменные окружения Node
+JS|express: app.use(helmet())|заголовки безопасности для Express
+JS|TypeScript: tsc --noEmit|проверка типов
+JS|vite / webpack|сборщики
+JS|eslint . / prettier .|линтер и форматирование
+JS|jest / vitest|тесты
+JS|playwright test|тесты в браузере
+JS|DevTools: F12|инструменты разработчика
+JS|DevTools: Network → Copy as cURL|повторить запрос из браузера
+JS|DevTools: Application → Cookies|куки и хранилище
+SQL|SELECT * FROM t WHERE x = ?|выборка с параметром
+SQL|SELECT col, COUNT(*) FROM t GROUP BY col|группировка
+SQL|SELECT ... ORDER BY x DESC LIMIT 10|сортировка и лимит
+SQL|JOIN: INNER / LEFT / RIGHT / FULL|соединения таблиц
+SQL|INSERT INTO t(a,b) VALUES (?,?)|вставка
+SQL|UPDATE t SET a=? WHERE id=?|обновление (всегда с WHERE)
+SQL|DELETE FROM t WHERE id=?|удаление (всегда с WHERE)
+SQL|CREATE INDEX i ON t(col)|индекс
+SQL|EXPLAIN ANALYZE SELECT ...|план запроса
+SQL|BEGIN; ... COMMIT; / ROLLBACK;|транзакции
+SQL|WITH cte AS (...) SELECT ...|общие табличные выражения
+SQL|ROW_NUMBER() OVER (PARTITION BY a ORDER BY b)|оконные функции
+SQL|COALESCE(a, b)|значение по умолчанию вместо NULL
+SQL|SQL-инъекции: только параметризованные запросы|главная защита
+SQL|GRANT SELECT ON db.* TO 'u'@'host'|минимальные права для приложения
+SQL|mysqldump -u u -p db > b.sql|бэкап MySQL
+SQL|pg_dump db > b.sql|бэкап PostgreSQL
+SQL|psql -h host -U user db|клиент PostgreSQL
+SQL|\dt \d table \l|команды psql
+SQL|mysql -u u -p -e "SHOW PROCESSLIST"|активные запросы MySQL
+SQL|sqlite3 a.db ".tables"|таблицы SQLite
+SQL|sqlite3 a.db ".schema"|схема SQLite
+SQL|redis-cli INFO|состояние Redis
+SQL|redis-cli --scan --pattern 'k*'|ключи по маске
+SQL|mongosh|консоль MongoDB
+SQL|db.coll.find({a:1})|поиск в MongoDB
+REGEX|\d+|одна или больше цифр
+REGEX|\w+|слово
+REGEX|\s+|пробелы
+REGEX|^...$|начало и конец строки
+REGEX|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|простой email
+REGEX|\b(?:\d{1,3}\.){3}\d{1,3}\b|IPv4-адрес (грубо)
+REGEX|https?://[^\s]+|ссылка
+REGEX|(?i)text|без учёта регистра
+REGEX|(?<name>...)|именованная группа
+REGEX|(?=...) (?!...)|заглядывание вперёд
+REGEX|.*? |ленивое совпадение
+REGEX|regex101.com|тестирование регулярок
+REGEX|ReDoS: избегай (a+)+|вложенные квантификаторы вешают программу
+DEBUG|gdb: break main / run / next / step|базовая отладка
+DEBUG|gdb: bt|стек вызовов
+DEBUG|gdb: info locals|локальные переменные
+DEBUG|gdb: x/20x $sp|память на стеке
+DEBUG|gdb: watch var|остановка при изменении
+DEBUG|gdb: core-file core|разбор дампа падения
+DEBUG|ulimit -c unlimited|включить core-дампы
+DEBUG|WinDbg: !analyze -v|анализ краш-дампа Windows
+DEBUG|procdump -ma pid|дамп процесса Windows
+DEBUG|perf top / perf record|профилирование Linux
+DEBUG|flamegraph|наглядный профиль
+DEBUG|strace -c cmd|статистика системных вызовов
+DEBUG|printf-отладка: логируй вход, выход, значения|самое простое и рабочее
+DEBUG|rubber duck: объясни код вслух|метод поиска ошибки
+DEBUG|minimal reproducible example|урежь код до минимума, где баг виден
+DEBUG|git bisect|найти, какой коммит сломал
+DEBUG|читай сообщение об ошибке с первой строки|там обычно ответ
+WEB|HTTP 200 OK / 201 Created / 204 No Content|успешные ответы
+WEB|HTTP 301/302/307/308|редиректы
+WEB|HTTP 400 / 401 / 403 / 404 / 429|ошибки клиента
+WEB|HTTP 500 / 502 / 503 / 504|ошибки сервера
+WEB|Strict-Transport-Security|заставить HTTPS
+WEB|X-Content-Type-Options: nosniff|запрет угадывания типа
+WEB|X-Frame-Options: DENY|защита от clickjacking
+WEB|Referrer-Policy: no-referrer|не отдавать referrer
+WEB|Set-Cookie: HttpOnly; Secure; SameSite=Lax|безопасные куки
+WEB|CORS: Access-Control-Allow-Origin|межсайтовые запросы
+WEB|CSRF: токен в форме|защита от подделки запросов
+WEB|XSS: экранируй вывод|межсайтовый скриптинг
+WEB|SQL injection: параметры вместо конкатенации|инъекции в БД
+WEB|IDOR: проверяй владельца объекта на сервере|прямой доступ к чужим данным
+WEB|SSRF: белый список адресов для запросов сервера|запросы во внутреннюю сеть
+WEB|Broken Access Control|нарушение контроля доступа — №1 в OWASP
+WEB|rate limiting|ограничение частоты запросов
+WEB|валидация на сервере, не только в браузере|базовое правило
+WEB|robots.txt — не защита|он только просит, а не запрещает
+WEB|REST: GET POST PUT PATCH DELETE|методы API
+WEB|GraphQL: отключай introspection в продакшене|меньше информации
+WEB|JWT в HttpOnly-куки, не в localStorage|меньше риск кражи
+WEB|OAuth2 + PKCE|безопасный вход
+WEB|Content-Type: application/json|тип тела запроса
+WEB|nginx: server_tokens off;|не показывать версию сервера
+WEB|nginx: limit_req_zone|ограничение запросов
+WEB|apache: ServerTokens Prod|скрыть версию
+WEB|.htaccess|настройки Apache по папкам
+WEB|postman / insomnia / bruno|клиенты для API
+WEB|httpie: http GET url|удобный curl
+WEB|ngrok http 3000|временный публичный адрес для локального сервера
+WEB|cloudflared tunnel|туннель без открытия портов
+VIM|:wq|сохранить и выйти
+VIM|:q!|выйти без сохранения
+VIM|dd / yy / p|удалить строку / копировать / вставить
+VIM|u / Ctrl+R|отмена / возврат
+VIM|/text / n / N|поиск вперёд и назад
+VIM|:%s/old/new/g|замена во всём файле
+VIM|gg / G|начало / конец файла
+VIM|:set number|номера строк
+VIM|Ctrl+V|блочное выделение
+VIM|ciw|заменить слово
+VIM|.|повторить последнее действие
+VIM|:vsplit / :split|разделить окно
+VIM|:e file|открыть файл
+VIM|nano: Ctrl+O, Ctrl+X|сохранить и выйти в nano
+TMUX|tmux new -s n|новая сессия
+TMUX|tmux ls|список сессий
+TMUX|tmux attach -t n|подключиться
+TMUX|Ctrl+B d|отсоединиться
+TMUX|Ctrl+B %|разделить вертикально
+TMUX|Ctrl+B "|разделить горизонтально
+TMUX|Ctrl+B стрелки|переход между панелями
+TMUX|Ctrl+B c / n / p|новое окно / следующее / прошлое
+TMUX|Ctrl+B [|режим прокрутки
+ALGO|O(1) < O(log n) < O(n) < O(n log n) < O(n²)|порядок сложности
+ALGO|binary search|поиск в отсортированном за O(log n)
+ALGO|quicksort / mergesort|быстрые сортировки
+ALGO|BFS / DFS|обход графа в ширину / глубину
+ALGO|Dijkstra|кратчайший путь по весам
+ALGO|dynamic programming|запоминание подзадач
+ALGO|two pointers / sliding window|приёмы для массивов
+ALGO|hash map|поиск за O(1) в среднем
+ALGO|heap / priority queue|быстрый минимум/максимум
+ALGO|trie|префиксное дерево для строк
+ALGO|union-find|объединение множеств
+ALGO|bit tricks: x & (x-1)|сброс младшего бита
+ALGO|gcd(a,b) = gcd(b, a%b)|алгоритм Евклида
+ALGO|sieve of Eratosthenes|решето простых чисел
+ALGO|leetcode.com / codeforces.com|тренировка задач
+TOOL|VS Code: Ctrl+P|быстрый переход к файлу
+TOOL|VS Code: Ctrl+Shift+P|палитра команд
+TOOL|VS Code: Ctrl+`|встроенный терминал
+TOOL|VS Code: F12|перейти к определению
+TOOL|VS Code: Alt+Click|несколько курсоров
+TOOL|JetBrains: Shift Shift|поиск везде
+TOOL|regexr.com / jsonlint.com / crontab.guru|онлайн-помощники
+TOOL|explainshell.com|разбор команды по частям
+TOOL|tldr cmd|короткие примеры вместо man
+TOOL|man cmd|руководство
+TOOL|cmd --help|краткая справка
+TOOL|devdocs.io|документация по всем языкам
+TOOL|stackoverflow.com|вопросы и ответы
+TOOL|shellcheck script.sh|проверка bash-скриптов
+TOOL|bash: set -euo pipefail|строгий режим скрипта
+TOOL|bash: trap 'cleanup' EXIT|выполнить при выходе
+TOOL|bash: "${var}" в кавычках|защита от пробелов в именах
+TOOL|bash: $(cmd)|подстановка вывода
+TOOL|bash: for f in *.txt; do ...; done|цикл по файлам
+TOOL|bash: [[ -f file ]]|проверка существования файла
+TOOL|make: .PHONY|цели без файлов
+TOOL|ansible-playbook -i hosts play.yml|автоматизация серверов
+TOOL|ansible all -m ping|проверка доступности хостов
+TOOL|terraform plan / apply|инфраструктура как код
+TOOL|vagrant up|виртуальная среда
+TOOL|virt-manager / VirtualBox / VMware|виртуальные машины для безопасных экспериментов
+TOOL|snapshot VM перед тестами|быстрый откат
+TOOL|Kali / Parrot / REMnux|дистрибутивы для проверки безопасности и анализа

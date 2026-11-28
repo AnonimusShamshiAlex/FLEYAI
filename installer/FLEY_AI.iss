@@ -1,6 +1,6 @@
 ; Установщик FLEY AI (Inno Setup 6). Сборка: make_installer.bat
 #define AppName "FLEY AI"
-#define AppVer "1.2"
+#define AppVer "1.3"
 #define AppExe "FLEY AI.exe"
 
 [Setup]

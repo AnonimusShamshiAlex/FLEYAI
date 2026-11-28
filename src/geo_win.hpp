@@ -381,7 +381,7 @@ static void GeoDrawGlobe(Gdiplus::Graphics& g, float cx, float cy, float R, doub
         path.AddEllipse(cx - R, cy - R, 2 * R, 2 * R);
         PathGradientBrush pb(&path);
         pb.SetCenterPoint(PointF(cx - R * 0.3f, cy - R * 0.3f));
-        pb.SetCenterColor(Al({16, 78, 124}, 245));
+        pb.SetCenterColor(Al({16, 110, 62}, 245));
         Color sur = Al({2, 12, 28}, 250);
         INT cnt = 1;
         pb.SetSurroundColors(&sur, &cnt);

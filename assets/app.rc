@@ -4,8 +4,8 @@
 1 24 "app.manifest"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,0,0
- PRODUCTVERSION 1,2,0,0
+ FILEVERSION 1,3,0,0
+ PRODUCTVERSION 1,3,0,0
  FILEFLAGSMASK 0x3fL
  FILEFLAGS 0x0L
  FILEOS 0x40004L
@@ -18,12 +18,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "FLEY Industries"
             VALUE "FileDescription", "FLEY AI voice assistant"
-            VALUE "FileVersion", "1.2.0.0"
+            VALUE "FileVersion", "1.3.0.0"
             VALUE "InternalName", "FLEY AI"
             VALUE "LegalCopyright", "Copyright (C) FLEY Industries"
             VALUE "OriginalFilename", "FLEY AI.exe"
             VALUE "ProductName", "FLEY AI"
-            VALUE "ProductVersion", "1.2.0.0"
+            VALUE "ProductVersion", "1.3.0.0"
         END
     END
     BLOCK "VarFileInfo"

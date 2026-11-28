@@ -396,6 +396,28 @@ int main() {
         CHECK(make_settings(parse_env("OPENAI_API_KEY=sk-proj-1")).vision_model == "gpt-4o-mini" && !make_settings(parse_env("OPENAI_API_KEY=sk-proj-1")).screen_aware);
         CHECK(make_settings(parse_env("OPENAI_API_KEY=sk-or-1\nFLEY_VISION_MODEL=my/vl")).vision_model == "my/vl");
     }
+    {   // любые API-ключи: определение провайдера и голосовой ввод
+        CHECK(detect_provider("sk-ant-api03-x") == "anthropic" && detect_provider("AIzaSyX") == "gemini" && detect_provider("xai-abc") == "xai");
+        CHECK(detect_provider("sk-0123456789abcdef0123456789abcdef") == "deepseek" && detect_provider("sk-proj-abc") == "openai");
+        CHECK(detect_provider("ghp_abc") == "github" && detect_provider("github_pat_abc") == "github");
+        CHECK(guess_provider_by_shape(std::string(64, 'a')) == "together" && guess_provider_by_shape("12345678-1234-1234-1234-123456789012") == "sambanova");
+        CHECK(guess_provider_by_shape(std::string(32, 'Z')) == "mistral" && guess_provider_by_shape(std::string(40, 'Z')) == "cohere" && guess_provider_by_shape("abc").empty());
+        Settings g1 = make_settings(parse_env("GROQ_API_KEY=AIzaSyX"));
+        CHECK(g1.provider == "gemini" && g1.stt_ok && g1.stt_chat && g1.stt == "gemini-2.5-flash");
+        Settings x1 = make_settings(parse_env("GROQ_API_KEY=xai-abc"));
+        CHECK(x1.provider == "xai" && x1.stt_ok && x1.stt_plain && x1.stt_endpoint == "/stt" && x1.stt == "grok-voice-transcribe-2.0");
+        Settings f1 = make_settings(parse_env("GROQ_API_KEY=fw_abc"));
+        CHECK(f1.provider == "fireworks" && f1.stt_ok && f1.stt_key == "fw_abc" && f1.stt_host == "audio-prod.api.fireworks.ai");
+        Settings a1 = make_settings(parse_env("GROQ_API_KEY=sk-ant-x"));            // без запасного ключа голос недоступен, как раньше
+        CHECK(a1.provider == "anthropic" && !a1.stt_ok && !a1.stt_fallback);
+        Settings a2 = make_settings(parse_env("GROQ_API_KEY=sk-ant-x"), "gsk_def");  // с запасным ключом Groq речь распознаёт Groq
+        CHECK(a2.stt_ok && a2.stt_fallback && a2.stt_groq && a2.stt_key == "gsk_def" && a2.stt_host == "api.groq.com" && a2.key == "sk-ant-x");
+        CHECK(!make_settings(parse_env("GROQ_API_KEY=sk-ant-x\nFLEY_STT_FALLBACK=0"), "gsk_def").stt_ok);
+        CHECK(make_settings(parse_env("GROQ_API_KEY=sk-ant-x\nFLEY_STT_API_KEY=gsk_own"), "gsk_def").stt_key == "gsk_own");
+        CHECK(make_settings(parse_env("GROQ_API_KEY=gsk_a"), "gsk_def").stt_groq && !make_settings(parse_env("GROQ_API_KEY=gsk_a"), "gsk_def").stt_fallback);
+        CHECK(make_settings(parse_env("GROQ_API_KEY=" + std::string(32, 'Q') + "\nFLEY_BASE_URL=https://x.test/v1")).provider == "custom");
+        CHECK(find_provider("cohere") && find_provider("deepinfra") && find_provider("moonshot") && find_provider("github") && find_provider("openai") && find_provider("ollama"));
+    }
     std::cout << "ALL TESTS PASSED\n";
     return 0;
 }

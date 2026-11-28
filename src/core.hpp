@@ -286,7 +286,17 @@ struct Settings {
     double mic_gain = 2.0;     // цифровое усиление микрофона (для речи издалека); FLEY_MIC_GAIN
     std::string vision_model;  // модель, которая понимает картинки (зрение, FLEY_VISION_MODEL)
     bool screen_aware = false; // автоматически смотреть на экран перед каждым ответом (FLEY_SCREEN_AWARE=1)
+    bool use_max_tokens = false;  // max_tokens вместо max_completion_tokens (все, кроме OpenAI и Groq)
+    bool tls = true;              // false для локальных серверов (http://localhost:11434/v1 и т.п.)
+    std::string provider;         // id провайдера (openai, groq, anthropic, gemini ...) или пусто = свой адрес
+    bool stt_ok = true, stt_groq = false;  // есть ли распознавание речи; идёт ли оно через Groq
+    std::string stt_key, stt_host, stt_path;  // отдельный ключ для распознавания (FLEY_STT_API_KEY); пусто = основной
     std::string stt_lang = "ru";  // язык распознавания речи; пусто = определять автоматически (FLEY_STT_LANG=auto)
+    // --- добавлено: голосовой ввод для провайдеров без /audio/transcriptions
+    std::string stt_endpoint = "/audio/transcriptions";  // xAI: /stt
+    bool stt_chat = false;     // распознавание через чат-модель с аудио (Gemini)
+    bool stt_plain = false;    // отправлять только model/language/file (xAI не любит лишние поля)
+    bool stt_fallback = false; // речь распознаёт запасной ключ Groq (у основного провайдера нет распознавания)
 };
 
 inline void split_url(std::string url, std::string& host, std::string& path) {
@@ -298,6 +308,69 @@ inline void split_url(std::string url, std::string& host, std::string& path) {
     while (!path.empty() && path.back() == '/') path.pop_back();
 }
 
+// Таблица провайдеров с OpenAI-совместимым API. Ключ определяется по префиксу; остальные - через FLEY_PROVIDER или FLEY_BASE_URL.
+struct ProviderInfo { const char *id, *label, *base, *model, *vision, *stt, *tts; };
+inline const std::vector<ProviderInfo>& provider_table() {
+    static const std::vector<ProviderInfo> T = {
+        {"openai", "OpenAI", "https://api.openai.com/v1", "gpt-4o-mini", "gpt-4o-mini", "gpt-4o-mini-transcribe", "gpt-4o-mini-tts"},
+        {"groq", "Groq", "https://api.groq.com/openai/v1", "openai/gpt-oss-120b", "qwen/qwen3.8-27b", "whisper-large-v3", "windows"},
+        {"openrouter", "OpenRouter", "https://openrouter.ai/api/v1", "openai/gpt-4o-mini", "openai/gpt-4o-mini", "openai/whisper-large-v3", "openai/gpt-4o-mini-tts-2025-12-15"},
+        {"anthropic", "Anthropic (Claude)", "https://api.anthropic.com/v1", "claude-haiku-5-5", "claude-haiku-5-5", "", "windows"},
+        {"gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash", "gemini-2.5-flash", "", "windows"},
+        {"xai", "xAI (Grok)", "https://api.x.ai/v1", "grok-3-mini", "grok-2-vision-1212", "", "windows"},
+        {"deepseek", "DeepSeek", "https://api.deepseek.com/v1", "deepseek-chat", "", "", "windows"},
+        {"mistral", "Mistral", "https://api.mistral.ai/v1", "mistral-small-latest", "mistral-small-latest", "voxtral-mini-latest", "windows"},
+        {"together", "Together AI", "https://api.together.xyz/v1", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo", "openai/whisper-large-v3", "windows"},
+        {"cerebras", "Cerebras", "https://api.cerebras.ai/v1", "llama-3.3-70b", "", "", "windows"},
+        {"perplexity", "Perplexity", "https://api.perplexity.ai", "sonar", "", "", "windows"},
+        {"nvidia", "NVIDIA NIM", "https://integrate.api.nvidia.com/v1", "meta/llama-3.1-70b-instruct", "", "", "windows"},
+        {"fireworks", "Fireworks", "https://api.fireworks.ai/inference/v1", "accounts/fireworks/models/llama-v3p3-70b-instruct", "", "", "windows"},
+        {"huggingface", "Hugging Face", "https://router.huggingface.co/v1", "meta-llama/Llama-3.3-70B-Instruct", "", "", "windows"},
+        {"sambanova", "SambaNova", "https://api.sambanova.ai/v1", "Meta-Llama-3.3-70B-Instruct", "", "", "windows"},
+        {"ollama", "Ollama (локально)", "http://localhost:11434/v1", "llama3.1", "", "", "windows"},
+        {"lmstudio", "LM Studio (локально)", "http://localhost:1234/v1", "local-model", "", "", "windows"},
+        // --- добавлено: ещё провайдеры (выбираются по ключу или через FLEY_PROVIDER)
+        {"cohere", "Cohere", "https://api.cohere.ai/compatibility/v1", "command-a-03-2025", "", "", "windows"},
+        {"deepinfra", "DeepInfra", "https://api.deepinfra.com/v1/openai", "meta-llama/Llama-3.3-70B-Instruct-Turbo", "", "openai/whisper-large-v3-turbo", "windows"},
+        {"moonshot", "Moonshot (Kimi)", "https://api.moonshot.ai/v1", "kimi-k2-0905-preview", "", "", "windows"},
+        {"github", "GitHub Models", "https://models.github.ai/inference", "openai/gpt-4o-mini", "openai/gpt-4o-mini", "", "windows"},
+        {"hyperbolic", "Hyperbolic", "https://api.hyperbolic.xyz/v1", "meta-llama/Llama-3.3-70B-Instruct", "", "", "windows"},
+        {"novita", "Novita AI", "https://api.novita.ai/v3/openai", "meta-llama/llama-3.3-70b-instruct", "", "", "windows"},
+    };
+    return T;
+}
+inline const ProviderInfo* find_provider(const std::string& id) {
+    for (const ProviderInfo& p : provider_table()) if (id == p.id) return &p;
+    return nullptr;
+}
+// Провайдер по префиксу ключа; пусто, если не узнали (тогда FLEY_PROVIDER или FLEY_BASE_URL в .env)
+inline std::string detect_provider(const std::string& k) {
+    struct P { const char* pre; const char* id; };
+    static const P T[] = {{"gsk_", "groq"}, {"sk-or-", "openrouter"}, {"sk-ant-", "anthropic"}, {"AIza", "gemini"}, {"xai-", "xai"},
+                          {"csk-", "cerebras"}, {"pplx-", "perplexity"}, {"nvapi-", "nvidia"}, {"fw_", "fireworks"}, {"hf_", "huggingface"}, {"sk-", "openai"}};
+    // добавлено: ключ DeepSeek выглядит как sk- + 32 символа hex (ключи OpenAI длиннее), иначе его принимали за OpenAI
+    if (k.size() == 35 && k.compare(0, 3, "sk-") == 0 && k.find_first_not_of("0123456789abcdefABCDEF", 3) == std::string::npos) return "deepseek";
+    // добавлено: GitHub Models (токены ghp_ / github_pat_ / gho_)
+    if (k.compare(0, 4, "ghp_") == 0 || k.compare(0, 11, "github_pat_") == 0 || k.compare(0, 4, "gho_") == 0) return "github";
+    for (const P& p : T) if (k.compare(0, std::strlen(p.pre), p.pre) == 0) return p.id;
+    return "";
+}
+// Добавлено: ключи без префикса узнаём по форме (используется только если адрес сервера не задан вручную).
+inline std::string guess_provider_by_shape(const std::string& k) {
+    auto all = [&](const char* set) { return !k.empty() && k.find_first_not_of(set) == std::string::npos; };
+    const char* hex = "0123456789abcdefABCDEF";
+    const char* alnum = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    if (k.size() == 64 && all(hex)) return "together";
+    if (k.size() == 36 && k[8] == '-' && k[13] == '-' && k[18] == '-' && k[23] == '-') return "sambanova";   // UUID
+    if (k.size() == 32 && all(alnum)) return "mistral";
+    if (k.size() == 40 && all(alnum)) return "cohere";
+    return "";
+}
+inline std::string provider_label(const std::string& id) {
+    const ProviderInfo* p = find_provider(id);
+    return p ? p->label : "";
+}
+
 inline Settings make_settings(const std::map<std::string, std::string>& env, const std::string& default_key = "") {
     auto get = [&](const char* k, const std::string& def) {
         auto it = env.find(k);
@@ -305,35 +378,77 @@ inline Settings make_settings(const std::map<std::string, std::string>& env, con
     };
     Settings s;
     s.key = get("OPENAI_API_KEY", get("OPENROUTER_API_KEY", get("GROQ_API_KEY", default_key)));
-    s.openrouter = s.key.compare(0, 6, "sk-or-") == 0;
-    s.groq = s.key.compare(0, 4, "gsk_") == 0;
-    std::string base, model, stt, tts;
-    if (s.openrouter) {
-        base = "https://openrouter.ai/api/v1";
-        model = "openai/gpt-4o-mini";
-        stt = "openai/whisper-large-v3";
-        tts = "openai/gpt-4o-mini-tts-2025-12-15";
-    } else if (s.groq) {
-        base = "https://api.groq.com/openai/v1";
-        model = "openai/gpt-oss-120b";
-        stt = "whisper-large-v3";
-        tts = "windows";
-    } else {
-        base = "https://api.openai.com/v1";
-        model = "gpt-4o-mini";
-        stt = "gpt-4o-mini-transcribe";
-        tts = "gpt-4o-mini-tts";
+    std::string pid = to_lower_ascii(get("FLEY_PROVIDER", ""));
+    const std::string customUrl = get("FLEY_BASE_URL", "");
+    if (pid.empty()) pid = detect_provider(s.key);
+    if (pid.empty() && customUrl.empty()) pid = guess_provider_by_shape(s.key);   // добавлено
+    if (pid.empty() && !customUrl.empty()) {   // адрес задан вручную: пробуем узнать провайдера по хосту
+        std::string h, pth;
+        split_url(customUrl, h, pth);
+        for (const ProviderInfo& pi : provider_table()) {
+            std::string ph, pp;
+            split_url(pi.base, ph, pp);
+            if (h == ph) { pid = pi.id; break; }
+        }
     }
-    std::string url = get("FLEY_BASE_URL", base);
+    const ProviderInfo* pi = find_provider(pid);
+    if (!pi && customUrl.empty()) pi = find_provider("openai");   // неизвестный ключ без адреса: как раньше, OpenAI
+    s.provider = pi ? pi->id : "custom";
+    if (s.key.empty() && pi && std::string(pi->id) == "ollama") s.key = "ollama";
+    if (s.key.empty() && pi && std::string(pi->id) == "lmstudio") s.key = "lm-studio";
+    s.groq = s.provider == "groq";
+    s.openrouter = s.provider == "openrouter";
+    s.use_max_tokens = !(s.provider == "openai" || s.provider == "groq");
+    std::string base = pi ? pi->base : customUrl;
+    std::string model = pi ? pi->model : "gpt-4o-mini";
+    std::string stt = pi ? pi->stt : "";
+    std::string tts = pi && pi->tts[0] ? pi->tts : "windows";
+    std::string url = customUrl.empty() ? base : customUrl;
+    s.tls = url.compare(0, 7, "http://") != 0;
     split_url(url, s.host, s.base_path);
-    s.openrouter = s.openrouter || s.host.find("openrouter.ai") != std::string::npos;
     s.model = get("FLEY_MODEL", model);
-    s.vision_model = get("FLEY_VISION_MODEL", s.openrouter ? "openai/gpt-4o-mini" : s.groq ? "qwen/qwen3.8-27b" : "gpt-4o-mini");
+    s.vision_model = get("FLEY_VISION_MODEL", pi && pi->vision[0] ? pi->vision : s.model);
+    {   // распознавание речи: у провайдера своё или отдельный ключ (FLEY_STT_API_KEY, например бесплатный Groq)
+        s.stt_key = get("FLEY_STT_API_KEY", "");
+        if (!s.stt_key.empty()) {
+            std::string sp = detect_provider(s.stt_key);
+            const ProviderInfo* si = find_provider(get("FLEY_STT_PROVIDER", sp.empty() ? "openai" : sp));
+            if (!si) si = find_provider("openai");
+            split_url(get("FLEY_STT_BASE_URL", si->base), s.stt_host, s.stt_path);
+            stt = si->stt[0] ? si->stt : "whisper-1";
+            s.stt_groq = std::string(si->id) == "groq";
+            s.stt_ok = true;
+        } else {
+            s.stt_groq = s.groq;
+            s.stt_ok = !stt.empty() || !get("FLEY_STT_MODEL", "").empty();
+        }
+    }
+    {   // --- добавлено: голосовой ввод для провайдеров, у которых нет /audio/transcriptions
+        if (s.stt_key.empty() && get("FLEY_STT_MODEL", "").empty()) {
+            if (s.provider == "gemini") {            // аудио понимает сама модель Gemini (тот же ключ)
+                s.stt_chat = true; s.stt_ok = true; stt = "gemini-2.5-flash";
+            } else if (s.provider == "xai") {        // xAI: отдельный адрес /v1/stt
+                s.stt_endpoint = "/stt"; s.stt_plain = true; s.stt_ok = true; stt = "grok-voice-transcribe-2.0";
+            } else if (s.provider == "fireworks") {  // Whisper на отдельном хосте Fireworks, тот же ключ
+                s.stt_key = s.key; s.stt_host = "audio-prod.api.fireworks.ai"; s.stt_path = "/v1"; s.stt_ok = true; stt = "whisper-v3";
+            }
+        }
+        std::string fb = to_lower_ascii(get("FLEY_STT_FALLBACK", "1"));
+        // Anthropic, Cerebras, Perplexity, NVIDIA, Hugging Face, DeepSeek и др. не умеют распознавать речь:
+        // тогда речь распознаёт Groq (ключ по умолчанию), а отвечает ваш провайдер. Отключить: FLEY_STT_FALLBACK=0
+        if (!s.stt_ok && s.stt_key.empty() && !(fb == "0" || fb == "false" || fb == "no" || fb == "off") &&
+            detect_provider(default_key) == "groq") {
+            s.stt_key = default_key;
+            split_url(find_provider("groq")->base, s.stt_host, s.stt_path);
+            stt = find_provider("groq")->stt;
+            s.stt_groq = true; s.stt_ok = true; s.stt_fallback = true;
+        }
+    }
     {
         std::string sa = to_lower_ascii(get("FLEY_SCREEN_AWARE", "0"));
         s.screen_aware = (sa == "1" || sa == "true" || sa == "yes" || sa == "on");
     }
-    s.stt = get("FLEY_STT_MODEL", stt);
+    s.stt = get("FLEY_STT_MODEL", stt.empty() ? "whisper-1" : stt);
     s.tts = get("FLEY_TTS_MODEL", tts);
     s.windows_tts = to_lower_ascii(s.tts) == "windows";
     s.tts_key = get("FLEY_TTS_API_KEY", "");
@@ -1622,8 +1737,8 @@ inline void fit_size(int w, int h, int max_side, int& ow, int& oh) {
 
 // Тело запроса chat/completions с одной картинкой (data-URI) и вопросом
 inline std::string vision_body(const std::string& model, const std::string& prompt, const std::string& mime, const std::string& b64,
-                               int max_tokens, bool openrouter, const std::string& extra = "") {
-    return "{\"model\":\"" + json_escape(model) + "\",\"" + (openrouter ? "max_tokens" : "max_completion_tokens") + "\":" + std::to_string(max_tokens) + "," + extra +
+                               int max_tokens, bool use_max_tokens, const std::string& extra = "") {
+    return "{\"model\":\"" + json_escape(model) + "\",\"" + (use_max_tokens ? "max_tokens" : "max_completion_tokens") + "\":" + std::to_string(max_tokens) + "," + extra +
            "\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"" + json_escape(prompt) +
            "\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:" + mime + ";base64," + b64 + "\"}}]}]}";
 }

@@ -1,4 +1,4 @@
-// vision_win.hpp - зрение и мышь FLEY AI 1.2: ИИ видит экран Windows, понимает его и нажимает на элементы.
+// vision_win.hpp - зрение и мышь FLEY AI 1.3: ИИ видит экран Windows, понимает его и нажимает на элементы.
 //
 //   see | вопрос | [window|all]   снимок экрана -> модель с картинками отвечает, что на экране
 //   screen_find | описание        найти элемент и вернуть координаты
@@ -148,10 +148,58 @@ static bool CaptureScreen(const std::string& what, Shot& out, std::string& err) 
     return CaptureRegion(r, 1400, out, err);
 }
 
+// Уменьшает готовый JPEG (если сервер отказал из-за размера картинки)
+static std::string ShrinkJpeg(const std::string& jpeg, int maxSide, ULONG quality) {
+    HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, jpeg.size());
+    if (!hg) return "";
+    void* p = GlobalLock(hg);
+    if (!p) { GlobalFree(hg); return ""; }
+    memcpy(p, jpeg.data(), jpeg.size());
+    GlobalUnlock(hg);
+    IStream* in = nullptr;
+    if (FAILED(CreateStreamOnHGlobal(hg, TRUE, &in)) || !in) { GlobalFree(hg); return ""; }
+    std::string res;
+    {
+        Gdiplus::Bitmap src(in);
+        CLSID jpg;
+        if (src.GetLastStatus() == Gdiplus::Ok && ImgEncoder(L"image/jpeg", &jpg)) {
+            int w = (int)src.GetWidth(), h = (int)src.GetHeight(), ow, oh;
+            fit_size(w, h, maxSide, ow, oh);
+            Gdiplus::Bitmap dst(ow, oh, PixelFormat24bppRGB);
+            {
+                Gdiplus::Graphics g(&dst);
+                g.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+                g.DrawImage(&src, Gdiplus::Rect(0, 0, ow, oh), 0, 0, w, h, Gdiplus::UnitPixel);
+            }
+            IStream* st = nullptr;
+            if (SUCCEEDED(CreateStreamOnHGlobal(nullptr, TRUE, &st)) && st) {
+                Gdiplus::EncoderParameters ep;
+                ep.Count = 1;
+                ep.Parameter[0].Guid = Gdiplus::EncoderQuality;
+                ep.Parameter[0].Type = Gdiplus::EncoderParameterValueTypeLong;
+                ep.Parameter[0].NumberOfValues = 1;
+                ep.Parameter[0].Value = &quality;
+                if (dst.Save(st, &jpg, &ep) == Gdiplus::Ok) {
+                    STATSTG ss = {};
+                    st->Stat(&ss, STATFLAG_NONAME);
+                    HGLOBAL oh2 = nullptr;
+                    GetHGlobalFromStream(st, &oh2);
+                    void* q = oh2 ? GlobalLock(oh2) : nullptr;
+                    if (q && ss.cbSize.LowPart > 0) res.assign((const char*)q, ss.cbSize.LowPart);
+                    if (q) GlobalUnlock(oh2);
+                }
+                st->Release();
+            }
+        }
+    }
+    in->Release();
+    return res;
+}
+
 // GET к API провайдера с ключом (нужен для списка моделей)
 static std::string HttpGetAuth(const std::string& path) {
     std::string body;
-    HINTERNET ses = WinHttpOpen(L"FLEY-AI/1.2", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    HINTERNET ses = WinHttpOpen(L"FLEY-AI/1.3", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!ses) return "";
     WinHttpSetTimeouts(ses, 10000, 10000, 15000, 20000);
     HINTERNET con = WinHttpConnect(ses, Widen(g_set.host).c_str(), INTERNET_DEFAULT_HTTPS_PORT, 0);
@@ -173,10 +221,22 @@ static std::string HttpGetAuth(const std::string& path) {
     WinHttpCloseHandle(ses);
     return body;
 }
-static bool VisionModelGone(const HttpRes& r) {   // эта модель недоступна: снята, нет доступа или не понимает картинки
-    if (r.status != 400 && r.status != 403 && r.status != 404 && r.status != 422) return false;
+static bool VisionImageTooBig(const HttpRes& r) {   // отказ из-за самой картинки (размер, формат), а не из-за модели
+    if (r.status == 413) return true;
+    if (r.status != 400 && r.status != 422) return false;
     std::string b = to_lower_ascii(r.body);
-    return b.find("model") != std::string::npos || b.find("image") != std::string::npos || b.find("vision") != std::string::npos || b.find("not support") != std::string::npos;
+    auto has = [&](const char* t) { return b.find(t) != std::string::npos; };
+    return has("too large") || has("exceed") || has("pixel") || has("base64") || has("decode") || has("invalid image") || (has("size") && has("image"));
+}
+static bool VisionModelGone(const HttpRes& r) {   // именно модель недоступна: снята, нет доступа или не понимает картинки
+    if (r.status == 404) return true;
+    if (r.status != 400 && r.status != 403 && r.status != 422) return false;
+    if (VisionImageTooBig(r)) return false;
+    std::string b = to_lower_ascii(r.body);
+    for (const char* t : {"model_not_found", "model_terms", "decommission", "does not exist", "not found", "no longer supported", "not available",
+                          "access to model", "have access", "does not support", "not support", "deprecated", "permission"})
+        if (b.find(t) != std::string::npos) return true;
+    return false;
 }
 
 // Вопрос по картинке. Сначала выбранная модель и запасные; если все недоступны - спрашиваем у провайдера список моделей
@@ -192,11 +252,20 @@ static std::string VisionAsk(const Shot& sh, const std::string& prompt, int maxT
             if (std::find(models.begin(), models.end(), std::string(m)) == models.end()) models.push_back(m);
     }
     std::string b64 = base64_encode(sh.jpeg);
+    bool shrunk = false;
+    auto send = [&](const std::string& m) {
+        return HttpPost("/chat/completions", "application/json", vision_body(m, prompt, "image/jpeg", b64, maxTok, g_set.use_max_tokens));
+    };
     HttpRes r;
     std::string used;
     bool discovered = false;
     for (size_t mi = 0; mi < models.size(); ++mi) {
-        r = HttpPost("/chat/completions", "application/json", vision_body(models[mi], prompt, "image/jpeg", b64, maxTok, g_set.openrouter));
+        r = send(models[mi]);
+        if (!shrunk && VisionImageTooBig(r)) {   // картинка не прошла по размеру: уменьшаем и повторяем с той же моделью
+            std::string sm = ShrinkJpeg(sh.jpeg, 900, 60);
+            if (!sm.empty()) { b64 = base64_encode(sm); shrunk = true; LogLine("vision: снимок велик, уменьшил до " + std::to_string(sm.size() / 1024) + " КБ"); r = send(models[mi]); }
+        }
+        if (r.status < 200 || r.status >= 300) LogLine("vision: " + models[mi] + " -> HTTP " + std::to_string(r.status) + ": " + utf8_truncate(r.body, 300));
         used = models[mi];
         tried.push_back(models[mi]);
         bool gone = VisionModelGone(r);
@@ -212,7 +281,7 @@ static std::string VisionAsk(const Shot& sh, const std::string& prompt, int maxT
         std::string list;
         for (const std::string& m : tried) list += (list.empty() ? "" : ", ") + m;
         throw std::runtime_error("У вашего ключа нет модели с поддержкой картинок (пробовал: " + utf8_truncate(list, 300) +
-                                 "). Впишите рабочую модель в .env: FLEY_VISION_MODEL=... (список моделей Groq: console.groq.com/docs/models, нужна с пометкой Vision).");
+                                 "). Ответ сервера: " + utf8_truncate(r.body, 200) + " Впишите рабочую модель в .env: FLEY_VISION_MODEL=... (у Groq список: console.groq.com/docs/models, нужна с пометкой Vision).");
     }
     CheckHttp(r);
     if (used != g_set.vision_model) {
